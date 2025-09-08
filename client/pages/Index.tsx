@@ -235,20 +235,22 @@ function PessoasTable() {
               </TableCell>
               <TableCell>{p.team_name ?? "—"}</TableCell>
               <TableCell className="text-right space-x-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) ? "Desmarcar pago" : "Marcar como pago"}
-                  title={(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) ? "Desmarcar pago" : "Marcar como pago"}
-                  onClick={() =>
-                    togglePaid.mutate({
-                      id: p.id,
-                      paid: !(typeof p.paid === "number" ? p.paid === 1 : !!p.paid),
-                    })
-                  }
-                >
-                  <CircleDollarSign className="h-4 w-4" />
-                </Button>
+                {!(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Marcar como pago"
+                    title="Marcar como pago"
+                    onClick={() =>
+                      togglePaid.mutate({
+                        id: p.id,
+                        paid: true,
+                      })
+                    }
+                  >
+                    <CircleDollarSign className="h-4 w-4" />
+                  </Button>
+                )}
                 <PlayerDialog player={p} icon />
                 <Button
                   variant="ghost"
