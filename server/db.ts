@@ -148,6 +148,32 @@ function migrate(db: SqlDatabase) {
       "CREATE INDEX IF NOT EXISTS idx_players_position ON players(position)",
     );
   }
+
+  // Rebuild match_events to support STAR type if old schema detected
+  const meMaster = db.exec(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='match_events'",
+  );
+  const meCreateSql: string = meMaster?.[0]?.values?.[0]?.[0] || "";
+  if (meCreateSql && !meCreateSql.includes("'STAR'")) {
+    db.run("ALTER TABLE match_events RENAME TO match_events_old");
+    db.run(`CREATE TABLE match_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      match_id INTEGER NOT NULL,
+      team_id INTEGER NOT NULL,
+      player_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED','STAR')),
+      minute INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
+      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+      FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
+    )`);
+    db.run(
+      "INSERT INTO match_events (id, match_id, team_id, player_id, type, minute, created_at) SELECT id, match_id, team_id, player_id, type, minute, created_at FROM match_events_old",
+    );
+    db.run("DROP TABLE match_events_old");
+    db.run("CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id)");
+  }
 }
 
 export async function all<T = any>(
