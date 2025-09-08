@@ -45,7 +45,7 @@ function migrate(db: SqlDatabase) {
     CREATE TABLE IF NOT EXISTS players (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      position TEXT NOT NULL CHECK (position in ('GOL','DEF','MEI','ATA')),
+      position TEXT NOT NULL CHECK (position in ('GOL','DEF','ALAD','ALAE','MEI','ATA')),
       paid INTEGER NOT NULL DEFAULT 0,
       team_id INTEGER NULL,
       created_at TEXT DEFAULT (datetime('now')),
