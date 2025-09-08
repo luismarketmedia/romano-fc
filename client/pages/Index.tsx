@@ -36,9 +36,30 @@ function Header() {
             <p className="text-xs text-muted-foreground">Mini dashboard • Times • Pessoas • Sorteios</p>
           </div>
         </div>
-        <ThemeBadge />
+        <div className="flex items-center gap-2">
+          <DevSeedButton />
+          <ThemeBadge />
+        </div>
       </div>
     </header>
+  );
+}
+
+function DevSeedButton() {
+  if (!import.meta.env.DEV) return null;
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: () => api.devSeed(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+  return (
+    <Button variant="outline" onClick={() => mut.mutate()} disabled={mut.isPending}>
+      {mut.isPending ? "Carregando..." : "Dados de teste"}
+    </Button>
   );
 }
 
