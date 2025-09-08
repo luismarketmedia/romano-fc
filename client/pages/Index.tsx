@@ -64,6 +64,24 @@ function DevSeedButton() {
   );
 }
 
+function DevClearButton() {
+  if (!import.meta.env.DEV) return null;
+  const qc = useQueryClient();
+  const mut = useMutation({
+    mutationFn: () => api.devClear(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+  return (
+    <Button variant="destructive" onClick={() => mut.mutate()} disabled={mut.isPending}>
+      {mut.isPending ? "Limpando..." : "Limpar base"}
+    </Button>
+  );
+}
+
 function ThemeBadge() {
   return (
     <div className="hidden sm:flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-primary-foreground text-xs font-semibold shadow">
