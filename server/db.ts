@@ -83,7 +83,7 @@ function migrate(db: SqlDatabase) {
       match_id INTEGER NOT NULL,
       team_id INTEGER NOT NULL,
       player_id INTEGER NOT NULL,
-      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED')),
+      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED','STAR')),
       minute INTEGER,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
