@@ -187,26 +187,88 @@ function StatCard({ title, value }: { title: string; value: number }) {
 
 function PessoasTable() {
   const qc = useQueryClient();
-  const playersQ = useQuery({
-    queryKey: ["players"],
-    queryFn: api.listPlayers,
-  });
+  const playersQ = useQuery({ queryKey: ["players"], queryFn: api.listPlayers });
+  const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const del = useMutation({
     mutationFn: (id: number) => api.deletePlayer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
   });
   const togglePaid = useMutation({
-    mutationFn: ({ id, paid }: { id: number; paid: boolean }) =>
-      api.updatePlayer(id, { paid }),
+    mutationFn: ({ id, paid }: { id: number; paid: boolean }) => api.updatePlayer(id, { paid }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
   });
 
+  const [search, setSearch] = useState("");
+  const [pos, setPos] = useState<string>("all");
+  const [team, setTeam] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const players = (playersQ.data ?? []);
+  const filtered = players.filter((p) => {
+    const byName = p.name.toLowerCase().includes(search.toLowerCase());
+    const byPos = pos === "all" || p.position === (pos as Position);
+    const byTeam = team === "all" || String(p.team_id ?? "") === team;
+    return byName && byPos && byTeam;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const paged = filtered.slice(start, start + pageSize);
+
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between pb-3 gap-3 flex-wrap">
         <h2 className="text-lg font-semibold">Pessoas</h2>
-        <PlayerDialog />
+        <div className="flex items-end gap-2 flex-1 min-w-[280px]">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm">Buscar por nome</label>
+            <Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Digite o nome" />
+          </div>
+          <div className="w-40">
+            <label className="mb-1 block text-sm">Posição</label>
+            <Select value={pos} onValueChange={(v) => { setPos(v); setPage(1); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {POSICOES.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-48">
+            <label className="mb-1 block text-sm">Time</label>
+            <Select value={team} onValueChange={(v) => { setTeam(v); setPage(1); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {(teamsQ.data ?? []).map((t) => (
+                  <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-28">
+            <label className="mb-1 block text-sm">Por página</label>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[5,10,20,50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <PlayerDialog />
+        </div>
       </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -218,48 +280,26 @@ function PessoasTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(playersQ.data ?? []).map((p) => (
+          {paged.map((p) => (
             <TableRow key={p.id}>
               <TableCell className="font-medium">{p.name}</TableCell>
               <TableCell>{p.position}</TableCell>
               <TableCell>
                 {(typeof p.paid === "number" ? p.paid === 1 : p.paid) ? (
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">
-                    Sim
-                  </span>
+                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">Sim</span>
                 ) : (
-                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-900 dark:text-red-200">
-                    Não
-                  </span>
+                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-900 dark:text-red-200">Não</span>
                 )}
               </TableCell>
               <TableCell>{p.team_name ?? "—"}</TableCell>
               <TableCell className="text-right space-x-1">
                 {!(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Marcar como pago"
-                    title="Marcar como pago"
-                    onClick={() =>
-                      togglePaid.mutate({
-                        id: p.id,
-                        paid: true,
-                      })
-                    }
-                  >
+                  <Button variant="ghost" size="icon" aria-label="Marcar como pago" title="Marcar como pago" onClick={() => togglePaid.mutate({ id: p.id, paid: true })}>
                     <CircleDollarSign className="h-4 w-4" />
                   </Button>
                 )}
                 <PlayerDialog player={p} icon />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="ml-0.5"
-                  aria-label="Remover jogador"
-                  title="Remover jogador"
-                  onClick={() => del.mutate(p.id)}
-                >
+                <Button variant="ghost" size="icon" className="ml-0.5" aria-label="Remover jogador" title="Remover jogador" onClick={() => del.mutate(p.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
@@ -267,6 +307,19 @@ function PessoasTable() {
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex items-center justify-between pt-3 text-sm text-muted-foreground">
+        <div>
+          Mostrando {filtered.length ? start + 1 : 0}–{Math.min(start + pageSize, filtered.length)} de {filtered.length}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Anterior</Button>
+          <span>
+            Página {page} / {totalPages}
+          </span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Próxima</Button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -400,12 +453,42 @@ function TimesTable() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const teams = teamsQ.data ?? [];
+  const filtered = teams.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const paged = filtered.slice(start, start + pageSize);
+
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between pb-3 gap-3 flex-wrap">
         <h2 className="text-lg font-semibold">Times</h2>
-        <TeamDialog />
+        <div className="flex items-end gap-2 flex-1 min-w-[280px]">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm">Buscar por nome</label>
+            <Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Digite o nome do time" />
+          </div>
+          <div className="w-28">
+            <label className="mb-1 block text-sm">Por página</label>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[5,10,20,50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <TeamDialog />
+        </div>
       </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -416,16 +499,13 @@ function TimesTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(teamsQ.data ?? []).map((t) => (
+          {paged.map((t) => (
             <TableRow key={t.id}>
               <TableCell className="font-medium">{t.name}</TableCell>
               <TableCell>
                 {t.color ? (
                   <span className="inline-flex items-center gap-2">
-                    <span
-                      className="h-4 w-4 rounded"
-                      style={{ background: t.color }}
-                    />
+                    <span className="h-4 w-4 rounded" style={{ background: t.color }} />
                     {t.color}
                   </span>
                 ) : (
@@ -436,13 +516,7 @@ function TimesTable() {
               <TableCell className="text-right space-x-1">
                 <TeamDialog team={t} icon />
                 <EscalacaoDialog team={t} icon />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Remover time"
-                  title="Remover time"
-                  onClick={() => del.mutate(t.id)}
-                >
+                <Button variant="ghost" size="icon" aria-label="Remover time" title="Remover time" onClick={() => del.mutate(t.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
@@ -450,6 +524,19 @@ function TimesTable() {
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex items-center justify-between pt-3 text-sm text-muted-foreground">
+        <div>
+          Mostrando {filtered.length ? start + 1 : 0}–{Math.min(start + pageSize, filtered.length)} de {filtered.length}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Anterior</Button>
+          <span>
+            Página {page} / {totalPages}
+          </span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Próxima</Button>
+        </div>
+      </div>
     </div>
   );
 }
