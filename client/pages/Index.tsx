@@ -715,7 +715,9 @@ function Jogos() {
                 {m.score_a} - {m.score_b}
               </TableCell>
               <TableCell className="text-right">
-                <MatchDialog matchId={m.id} />
+                <a href={`/jogos/${m.id}`}>
+                  <Button variant="outline">Gerenciar</Button>
+                </a>
               </TableCell>
             </TableRow>
           ))}
