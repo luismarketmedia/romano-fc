@@ -419,10 +419,22 @@ function Sorteio() {
     setResult(r);
   };
 
+  const gerarJogos = async () => {
+    // Pair teams in order using DB team ids by name
+    const teams = await api.listTeams();
+    const ids: number[] = [];
+    (result?.teams ?? []).forEach((t) => {
+      const match = teams.find((dbt) => dbt.name === t.name);
+      if (match) ids.push(match.id);
+    });
+    if (ids.length < 2) return;
+    await api.generateMatches(ids);
+  };
+
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <h2 className="text-lg font-semibold">Sorteio de Times</h2>
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div>
           <label className="mb-1 block text-sm">Qtd de times</label>
           <Input type="number" min={2} value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))} />
@@ -437,6 +449,9 @@ function Sorteio() {
         </div>
         <div className="flex items-end">
           <Button className="w-full" onClick={run}>Sortear</Button>
+        </div>
+        <div className="flex items-end">
+          <Button className="w-full" disabled={!result || !apply} onClick={gerarJogos}>Gerar jogos</Button>
         </div>
       </div>
 
@@ -458,5 +473,139 @@ function Sorteio() {
         </div>
       )}
     </div>
+  );
+}
+
+function Jogos() {
+  const qc = useQueryClient();
+  const matchesQ = useQuery({ queryKey: ["matches"], queryFn: api.listMatches });
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between pb-3">
+        <h2 className="text-lg font-semibold">Jogos</h2>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Partida</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Placar</TableHead>
+            <TableHead className="text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {(matchesQ.data ?? []).map((m: any) => (
+            <TableRow key={m.id}>
+              <TableCell>{m.team_a_name} vs {m.team_b_name}</TableCell>
+              <TableCell className="uppercase text-xs text-muted-foreground">{m.status}</TableCell>
+              <TableCell>{m.score_a} - {m.score_b}</TableCell>
+              <TableCell className="text-right">
+                <MatchDialog matchId={m.id} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function MatchDialog({ matchId }: { matchId: number }) {
+  const [open, setOpen] = useState(false);
+  const detail = useQuery({ queryKey: ["match", matchId], queryFn: () => api.getMatch(matchId), enabled: open });
+  const qc = useQueryClient();
+  const add = useMutation({
+    mutationFn: (payload: any) => api.addEvent(matchId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+  });
+  const del = useMutation({
+    mutationFn: (id: number) => api.deleteEvent(matchId, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+  });
+
+  const [team, setTeam] = useState<string>("");
+  const [player, setPlayer] = useState<string>("");
+  const [type, setType] = useState<string>("GOAL");
+  const [minute, setMinute] = useState<string>("");
+
+  const players = team === "A" ? (detail.data?.aPlayers ?? []) : team === "B" ? (detail.data?.bPlayers ?? []) : [];
+  const teamId = team === "A" ? detail.data?.match.team_a_id : team === "B" ? detail.data?.match.team_b_id : undefined;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Gerenciar</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {detail.data?.match.team_a_name} {" "}
+            <span className="px-2">vs</span>
+            {detail.data?.match.team_b_name}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 pt-2">
+          <div>
+            <label className="mb-1 block text-sm">Time</label>
+            <Select value={team} onValueChange={setTeam}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="A">{detail.data?.match.team_a_name}</SelectItem>
+                <SelectItem value="B">{detail.data?.match.team_b_name}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm">Jogador</label>
+            <Select value={player} onValueChange={setPlayer}>
+              <SelectTrigger><SelectValue placeholder="Escolha" /></SelectTrigger>
+              <SelectContent>
+                {players.map((p: any) => (
+                  <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm">Evento</label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GOAL">Gol</SelectItem>
+                <SelectItem value="YELLOW">Amarelo</SelectItem>
+                <SelectItem value="RED">Vermelho</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1 block text-sm">Minuto</label>
+            <Input value={minute} onChange={(e) => setMinute(e.target.value)} placeholder="ex: 12" />
+          </div>
+          <div className="flex items-end">
+            <Button
+              className="w-full"
+              disabled={!teamId || !player}
+              onClick={() => add.mutate({ team_id: teamId, player_id: Number(player), type, minute: minute ? Number(minute) : null })}
+            >
+              Adicionar evento
+            </Button>
+          </div>
+        </div>
+
+        <div className="pt-4">
+          <div className="font-semibold mb-2">Eventos</div>
+          <ul className="space-y-2 max-h-60 overflow-auto">
+            {(detail.data?.events ?? []).map((e: any) => (
+              <li key={e.id} className="flex items-center justify-between rounded border px-3 py-2 text-sm">
+                <span>
+                  {e.type === 'GOAL' ? 'Gol' : e.type === 'YELLOW' ? 'Amarelo' : 'Vermelho'} — {e.player_name} {e.minute ? `(${e.minute}m)` : ''}
+                </span>
+                <Button variant="destructive" onClick={() => del.mutate(e.id)}>Remover</Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
