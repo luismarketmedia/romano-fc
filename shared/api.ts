@@ -10,3 +10,39 @@
 export interface DemoResponse {
   message: string;
 }
+
+export type Position = "GOL" | "DEF" | "MEI" | "ATA";
+
+export interface Team {
+  id: number;
+  name: string;
+  color?: string | null;
+  created_at?: string;
+  playerCount?: number;
+}
+
+export interface Player {
+  id: number;
+  name: string;
+  position: Position;
+  paid: boolean | number; // server returns 0/1 sometimes
+  team_id: number | null;
+  created_at?: string;
+  team_name?: string | null;
+}
+
+export interface DrawRequest {
+  teamCount: number;
+  paidOnly?: boolean;
+  apply?: boolean;
+}
+
+export interface DrawResultTeam {
+  name: string;
+  players: Player[];
+}
+
+export interface DrawResponse {
+  teams: DrawResultTeam[];
+  total: number;
+}

@@ -2,6 +2,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import { listTeams, createTeam, updateTeam, deleteTeam } from "./routes/teams";
+import { listPlayers, createPlayer, updatePlayer, deletePlayer } from "./routes/players";
+import { drawTeams } from "./routes/draw";
 
 export function createServer() {
   const app = express();
@@ -18,6 +21,21 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Teams
+  app.get("/api/teams", listTeams);
+  app.post("/api/teams", createTeam);
+  app.put("/api/teams/:id", updateTeam);
+  app.delete("/api/teams/:id", deleteTeam);
+
+  // Players
+  app.get("/api/players", listPlayers);
+  app.post("/api/players", createPlayer);
+  app.put("/api/players/:id", updatePlayer);
+  app.delete("/api/players/:id", deletePlayer);
+
+  // Draw
+  app.post("/api/draw", drawTeams);
 
   return app;
 }
