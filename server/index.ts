@@ -5,6 +5,7 @@ import { handleDemo } from "./routes/demo";
 import { listTeams, createTeam, updateTeam, deleteTeam } from "./routes/teams";
 import { listPlayers, createPlayer, updatePlayer, deletePlayer } from "./routes/players";
 import { drawTeams } from "./routes/draw";
+import { getLineup, saveLineup } from "./routes/lineup";
 
 export function createServer() {
   const app = express();
