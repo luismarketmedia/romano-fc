@@ -93,6 +93,33 @@ function migrate(db: SqlDatabase) {
 
     CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id);
   `);
+
+  // Schema upgrades: add new team columns if missing
+  const cols = db.exec("PRAGMA table_info('teams')");
+  const teamColNames = new Set<string>((cols?.[0]?.values ?? []).map((r: any[]) => String(r[1])));
+  if (!teamColNames.has("line_count")) db.run("ALTER TABLE teams ADD COLUMN line_count INTEGER");
+  if (!teamColNames.has("formation")) db.run("ALTER TABLE teams ADD COLUMN formation TEXT");
+  if (!teamColNames.has("reserves_count")) db.run("ALTER TABLE teams ADD COLUMN reserves_count INTEGER");
+
+  // Rebuild players table to allow ALAD/ALAE if old schema detected
+  const master = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='players'");
+  const createSql: string = master?.[0]?.values?.[0]?.[0] || "";
+  if (createSql && !createSql.includes("ALAD")) {
+    db.run("ALTER TABLE players RENAME TO players_old");
+    db.run(`CREATE TABLE players (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      position TEXT NOT NULL CHECK (position in ('GOL','DEF','ALAD','ALAE','MEI','ATA')),
+      paid INTEGER NOT NULL DEFAULT 0,
+      team_id INTEGER NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE SET NULL
+    )`);
+    db.run("INSERT INTO players (id,name,position,paid,team_id,created_at) SELECT id,name,position,paid,team_id,created_at FROM players_old");
+    db.run("DROP TABLE players_old");
+    db.run("CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id)");
+    db.run("CREATE INDEX IF NOT EXISTS idx_players_position ON players(position)");
+  }
 }
 
 export async function all<T = any>(sql: string, params: any[] = []): Promise<T[]> {
