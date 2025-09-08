@@ -46,3 +46,20 @@ export interface DrawResponse {
   teams: DrawResultTeam[];
   total: number;
 }
+
+export interface Lineup {
+  team_id: number;
+  goleiro: number | null;
+  ala_direito: number | null;
+  ala_esquerdo: number | null;
+  frente: number | null;
+  zag: number | null;
+  meio: number | null;
+  reserva1: number | null;
+  reserva2: number | null;
+}
+
+export interface LineupResponse {
+  lineup: Partial<Lineup> & { team_id: number };
+  players: Pick<Player, "id" | "name">[];
+}
