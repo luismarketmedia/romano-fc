@@ -46,3 +46,12 @@ export const seedAndDraw: RequestHandler = async (_req, res) => {
 
   res.json({ ok: true, teamCount });
 };
+
+export const clearDb: RequestHandler = async (_req, res) => {
+  await run(`DELETE FROM match_events`);
+  await run(`DELETE FROM matches`);
+  await run(`DELETE FROM players`);
+  await run(`DELETE FROM lineups`);
+  await run(`DELETE FROM teams`);
+  res.json({ ok: true });
+};
