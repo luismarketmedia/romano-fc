@@ -143,7 +143,7 @@ function TeamColumn({
             >
               <span className="font-medium">{p.name}</span>
               <div className="flex items-center gap-2">
-                <BadgeCount label="⭐" count={s} />
+                <StarBadge active={isStar} />
                 <BadgeCount label="⚽" count={g} />
                 <BadgeCount label="🟨" count={y} />
                 <BadgeCount label="🟥" count={r} />
@@ -188,7 +188,7 @@ function BadgeCount({ label, count }: { label: string; count: number }) {
 
 function StarBadge({ active }: { active: boolean }) {
   if (!active)
-    return <span className="text-xs text-muted-foreground">⭐</span>;
+    return null;
   return (
     <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-100">
       ⭐
