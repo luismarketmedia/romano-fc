@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Player, Team, Position, DrawResponse } from "@shared/api";
 import { api } from "@/lib/api";
@@ -652,8 +652,13 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
     enabled: open,
   });
   const players = (data?.players ?? []) as { id: number; name: string }[];
-  const initial = data?.lineup ?? { team_id: team.id };
-  const [form, setForm] = useState<any>(initial);
+  const [form, setForm] = useState<any>({ team_id: team.id });
+
+  useEffect(() => {
+    if (open) {
+      setForm(data?.lineup ?? { team_id: team.id });
+    }
+  }, [open, data, team.id]);
 
   const mutate = useMutation({
     mutationFn: (payload: any) => api.saveLineup(team.id, payload),
@@ -685,13 +690,7 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
   );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (v) setForm(initial);
-      }}
-    >
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {icon ? (
           <Button variant="ghost" size="icon" aria-label="Escalação" title="Escalação">
