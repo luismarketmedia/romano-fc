@@ -172,7 +172,7 @@ function PlayerDialog({ player }: { player?: Player }) {
   const [name, setName] = useState(player?.name ?? "");
   const [position, setPosition] = useState<Position>(player?.position ?? "MEI");
   const [paid, setPaid] = useState<boolean>(typeof player?.paid === "number" ? player!.paid === 1 : !!player?.paid);
-  const [teamId, setTeamId] = useState<string>(player?.team_id ? String(player.team_id) : "");
+  const [teamId, setTeamId] = useState<string>(player?.team_id ? String(player.team_id) : "none");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
