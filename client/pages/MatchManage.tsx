@@ -78,7 +78,7 @@ export default function MatchManage() {
           <div className="w-[88px]" />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-2 gap-4">
           <TeamColumn
             title={q.data?.match.team_a_name ?? ""}
             teamId={q.data?.match.team_a_id}
