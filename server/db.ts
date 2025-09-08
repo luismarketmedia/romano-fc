@@ -51,6 +51,19 @@ function migrate(db: SqlDatabase) {
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE SET NULL
     );
+    CREATE TABLE IF NOT EXISTS lineups (
+      team_id INTEGER PRIMARY KEY,
+      goleiro INTEGER NULL,
+      ala_direito INTEGER NULL,
+      ala_esquerdo INTEGER NULL,
+      frente INTEGER NULL,
+      zag INTEGER NULL,
+      meio INTEGER NULL,
+      reserva1 INTEGER NULL,
+      reserva2 INTEGER NULL,
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE
+    );
     CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id);
     CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
   `);
