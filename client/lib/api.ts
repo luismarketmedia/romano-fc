@@ -49,4 +49,12 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then((r) => json<DrawResponse>(r)),
+
+  getLineup: (teamId: number) => fetch(`/api/teams/${teamId}/lineup`).then((r) => json<any>(r)),
+  saveLineup: (teamId: number, data: any) =>
+    fetch(`/api/teams/${teamId}/lineup`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then((r) => json<any>(r)),
 };
