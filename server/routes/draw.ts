@@ -20,19 +20,40 @@ export const drawTeams: RequestHandler = async (req, res) => {
     [paidOnly ? 1 : 0],
   );
 
-  const positions = ["GOL", "DEF", "MEI", "ATA"] as const;
+  const positions = ["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"] as const;
   const buckets: Record<string, any[]> = {};
   for (const p of positions) buckets[p] = [];
-  for (const pl of eligible as any[]) buckets[pl.position].push(pl);
+  for (const pl of eligible as any[]) buckets[pl.position]?.push(pl);
   for (const p of positions) buckets[p] = shuffle(buckets[p]);
 
   const result: { name: string; players: any[] }[] = Array.from({ length: n }, (_, i) => ({ name: `Time ${i + 1}`, players: [] }));
 
-  for (const pos of positions) {
-    const list = buckets[pos];
-    for (let i = 0; i < list.length; i++) {
-      result[i % n].players.push(list[i]);
-    }
+  // Use lineup roles as requirements (if exist)
+  const lineups: any[] = await all(`SELECT * FROM lineups ORDER BY team_id`);
+
+  const assignRole = (teamIdx: number, role: string, needPos: string) => {
+    const pool = buckets[needPos] as any[];
+    if (pool.length === 0) return;
+    const player = pool.shift();
+    result[teamIdx].players.push(player);
+  };
+
+  for (let i = 0; i < n; i++) {
+    assignRole(i, "goleiro", "GOL");
+    assignRole(i, "zag", "DEF");
+    assignRole(i, "ala_direito", "ALAD");
+    assignRole(i, "ala_esquerdo", "ALAE");
+    assignRole(i, "meio", "MEI");
+    assignRole(i, "frente", "ATA");
+  }
+
+  // Fill reserves with any remaining players
+  let leftovers = ([] as any[]).concat(...positions.map((p) => buckets[p]));
+  leftovers = shuffle(leftovers);
+  let t = 0;
+  while (leftovers.length) {
+    result[t % n].players.push(leftovers.shift());
+    t++;
   }
 
   if (apply) {
