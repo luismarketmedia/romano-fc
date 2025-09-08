@@ -91,4 +91,5 @@ export const api = {
 
   // Dev utilities
   devSeed: () => request<{ ok: true; teamCount: number }>("/api/dev/seed", { method: "POST" }),
+  devClear: () => request<{ ok: true }>("/api/dev/clear", { method: "POST" }),
 };
