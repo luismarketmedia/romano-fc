@@ -88,6 +88,7 @@ export default function MatchManage() {
             teamId={q.data?.match.team_a_id}
             players={(q.data?.aPlayers ?? []) as any}
             events={evs}
+            currentStarId={starPlayerId}
             onEvent={(playerId, type) =>
               add.mutate({
                 team_id: q.data?.match.team_a_id,
@@ -153,7 +154,7 @@ function TeamColumn({
                 <BadgeCount label="🟥" count={r} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Ações">
+                    <Button variant="ghost" size="icon" aria-label="Aç��es">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
