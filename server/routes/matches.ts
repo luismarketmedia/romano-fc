@@ -83,10 +83,11 @@ export const deleteEvent: RequestHandler = async (req, res) => {
 export const generateMatches: RequestHandler = async (req, res) => {
   const { teamIds } = req.body ?? {};
   if (!Array.isArray(teamIds) || teamIds.length < 2) return res.status(400).json({ error: "Lista de times inválida" });
+  const ids = [...teamIds].sort(() => Math.random() - 0.5);
   const created: any[] = [];
-  for (let i = 0; i < teamIds.length; i += 2) {
-    const a = teamIds[i];
-    const b = teamIds[i + 1];
+  for (let i = 0; i < ids.length; i += 2) {
+    const a = ids[i];
+    const b = ids[i + 1];
     if (a && b) {
       const id = await insert(`INSERT INTO matches (team_a_id, team_b_id) VALUES (?, ?)`, [a, b]);
       const m = await get(`SELECT * FROM matches WHERE id = ?`, [id]);
