@@ -224,7 +224,7 @@ function PlayerDialog({ player }: { player?: Player }) {
                   <SelectValue placeholder="Sem time" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem time</SelectItem>
+                  <SelectItem value="none">Sem time</SelectItem>
                   {(teams.data ?? []).map((t) => (
                     <SelectItem key={t.id} value={String(t.id)}>
                       {t.name}
@@ -238,7 +238,7 @@ function PlayerDialog({ player }: { player?: Player }) {
         <DialogFooter className="pt-2">
           <Button
             onClick={() =>
-              mut.mutate({ name, position, paid, team_id: teamId ? Number(teamId) : null })
+              mut.mutate({ name, position, paid, team_id: teamId === "none" ? null : Number(teamId) })
             }
           >
             Salvar
@@ -365,12 +365,12 @@ function EscalacaoDialog({ team }: { team: Team }) {
   const role = (key: string, label: string) => (
     <div>
       <label className="mb-1 block text-sm">{label}</label>
-      <Select value={String(form?.[key] ?? "")} onValueChange={(v) => setForm({ ...form, [key]: v ? Number(v) : null })}>
+      <Select value={String(form?.[key] ?? "none")} onValueChange={(v) => setForm({ ...form, [key]: v === "none" ? null : Number(v) })}>
         <SelectTrigger>
           <SelectValue placeholder="Escolha jogador" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">—</SelectItem>
+          <SelectItem value="none">—</SelectItem>
           {players.map((p) => (
             <SelectItem key={p.id} value={String(p.id)}>
               {p.name}
