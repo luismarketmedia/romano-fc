@@ -283,9 +283,10 @@ function TimesTable() {
                 )}
               </TableCell>
               <TableCell>{t.playerCount ?? "—"}</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-right space-x-2">
                 <TeamDialog team={t} />
-                <Button variant="destructive" className="ml-2" onClick={() => del.mutate(t.id)}>
+                <EscalacaoDialog team={t} />
+                <Button variant="destructive" onClick={() => del.mutate(t.id)}>
                   Remover
                 </Button>
               </TableCell>
