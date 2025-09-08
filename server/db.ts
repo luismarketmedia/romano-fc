@@ -66,6 +66,32 @@ function migrate(db: SqlDatabase) {
     );
     CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id);
     CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
+
+    CREATE TABLE IF NOT EXISTS matches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      team_a_id INTEGER NOT NULL,
+      team_b_id INTEGER NOT NULL,
+      scheduled_at TEXT,
+      status TEXT DEFAULT 'scheduled',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY(team_a_id) REFERENCES teams(id) ON DELETE CASCADE,
+      FOREIGN KEY(team_b_id) REFERENCES teams(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS match_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      match_id INTEGER NOT NULL,
+      team_id INTEGER NOT NULL,
+      player_id INTEGER NOT NULL,
+      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED')),
+      minute INTEGER,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
+      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
+      FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id);
   `);
 }
 
