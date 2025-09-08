@@ -185,3 +185,13 @@ function BadgeCount({ label, count }: { label: string; count: number }) {
     </span>
   );
 }
+
+function StarBadge({ active }: { active: boolean }) {
+  if (!active)
+    return <span className="text-xs text-muted-foreground">⭐</span>;
+  return (
+    <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+      ⭐
+    </span>
+  );
+}
