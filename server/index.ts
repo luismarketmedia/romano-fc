@@ -53,5 +53,8 @@ export function createServer() {
   app.post("/api/matches/:id/events", addEvent);
   app.delete("/api/matches/:id/events/:eventId", deleteEvent);
 
+  // Dev utilities
+  app.post("/api/dev/seed", seedAndDraw);
+
   return app;
 }
