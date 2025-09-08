@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 const LOGO = "https://cdn.builder.io/api/v1/image/assets%2Fdd0e0d13e89c41f6bd8d2f066e57bed0%2Fbe6eb874bc804d4aa984b5ff83177460?format=webp&width=300";
 
-const POSICOES: Position[] = ["GOL", "DEF", "MEI", "ATA"];
+const POSICOES: Position[] = ["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"];
 
 export default function Index() {
   return (
