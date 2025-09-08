@@ -55,6 +55,7 @@ export function createServer() {
 
   // Dev utilities
   app.post("/api/dev/seed", seedAndDraw);
+  app.post("/api/dev/clear", clearDb);
 
   return app;
 }
