@@ -73,6 +73,7 @@ function Dashboard() {
           <TabsTrigger value="pessoas">Pessoas</TabsTrigger>
           <TabsTrigger value="times">Times</TabsTrigger>
           <TabsTrigger value="sorteio">Sorteio</TabsTrigger>
+          <TabsTrigger value="jogos">Jogos</TabsTrigger>
         </TabsList>
         <TabsContent value="pessoas" className="pt-4">
           <PessoasTable />
@@ -82,6 +83,9 @@ function Dashboard() {
         </TabsContent>
         <TabsContent value="sorteio" className="pt-4">
           <Sorteio />
+        </TabsContent>
+        <TabsContent value="jogos" className="pt-4">
+          <Jogos />
         </TabsContent>
       </Tabs>
     </div>
