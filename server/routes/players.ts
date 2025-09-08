@@ -11,7 +11,7 @@ export const listPlayers: RequestHandler = async (_req, res) => {
 export const createPlayer: RequestHandler = async (req, res) => {
   const { name, position, paid, team_id } = req.body ?? {};
   if (!name || typeof name !== "string") return res.status(400).json({ error: "Nome é obrigatório" });
-  if (!position || !["GOL","DEF","MEI","ATA"].includes(position)) return res.status(400).json({ error: "Posição inválida" });
+  if (!position || !["GOL","DEF","ALAD","ALAE","MEI","ATA"].includes(position)) return res.status(400).json({ error: "Posição inválida" });
   const id = await insert("INSERT INTO players (name, position, paid, team_id) VALUES (?, ?, ?, ?)", [
     name,
     position,
