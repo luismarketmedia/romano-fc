@@ -63,3 +63,29 @@ export interface LineupResponse {
   lineup: Partial<Lineup> & { team_id: number };
   players: Pick<Player, "id" | "name">[];
 }
+
+export type MatchStatus = "scheduled" | "playing" | "finished";
+
+export interface Match {
+  id: number;
+  team_a_id: number;
+  team_b_id: number;
+  team_a_name?: string;
+  team_b_name?: string;
+  score_a?: number;
+  score_b?: number;
+  scheduled_at?: string | null;
+  status: MatchStatus;
+}
+
+export type EventType = "GOAL" | "YELLOW" | "RED";
+export interface MatchEvent {
+  id: number;
+  match_id: number;
+  team_id: number;
+  player_id: number;
+  type: EventType;
+  minute?: number | null;
+  player_name?: string;
+  created_at?: string;
+}
