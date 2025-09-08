@@ -34,6 +34,10 @@ export default function MatchManage() {
   });
 
   const evs: MatchEvent[] = (q.data?.events ?? []) as any;
+  const starPlayerId = useMemo(() => {
+    const s = evs.find((e) => e.type === "STAR");
+    return s?.player_id as number | undefined;
+  }, [evs]);
 
   const scoreA = useMemo(
     () =>
