@@ -43,5 +43,14 @@ export function createServer() {
   app.get("/api/teams/:id/lineup", getLineup);
   app.put("/api/teams/:id/lineup", saveLineup);
 
+  // Matches
+  app.get("/api/matches", listMatches);
+  app.post("/api/matches", createMatch);
+  app.post("/api/matches/generate", generateMatches);
+  app.get("/api/matches/:id", getMatch);
+  app.put("/api/matches/:id", updateMatch);
+  app.post("/api/matches/:id/events", addEvent);
+  app.delete("/api/matches/:id/events/:eventId", deleteEvent);
+
   return app;
 }
