@@ -13,7 +13,10 @@ function shuffle<T>(arr: T[]): T[] {
 export const drawTeams: RequestHandler = async (req, res) => {
   const { teamCount, paidOnly = true, apply = false } = req.body ?? {};
   const n = Number(teamCount);
-  if (!n || n < 2) return res.status(400).json({ error: "Informe a quantidade de times (>= 2)" });
+  if (!n || n < 2)
+    return res
+      .status(400)
+      .json({ error: "Informe a quantidade de times (>= 2)" });
 
   const eligible = await all(
     `SELECT * FROM players WHERE (? = 0 OR paid = 1) ORDER BY RANDOM()`,
@@ -26,7 +29,10 @@ export const drawTeams: RequestHandler = async (req, res) => {
   for (const pl of eligible as any[]) buckets[pl.position]?.push(pl);
   for (const p of positions) buckets[p] = shuffle(buckets[p]);
 
-  const result: { name: string; players: any[] }[] = Array.from({ length: n }, (_, i) => ({ name: `Time ${i + 1}`, players: [] }));
+  const result: { name: string; players: any[] }[] = Array.from(
+    { length: n },
+    (_, i) => ({ name: `Time ${i + 1}`, players: [] }),
+  );
 
   // Use lineup roles as requirements (if exist)
   const lineups: any[] = await all(`SELECT * FROM lineups ORDER BY team_id`);

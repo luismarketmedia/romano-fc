@@ -17,7 +17,9 @@ export const getLineup: RequestHandler = async (req, res) => {
   if (!teamId) return res.status(400).json({ error: "ID inválido" });
   const team = await get("SELECT * FROM teams WHERE id = ?", [teamId]);
   if (!team) return res.status(404).json({ error: "Time não encontrado" });
-  let lineup: any = await get("SELECT * FROM lineups WHERE team_id = ?", [teamId]);
+  let lineup: any = await get("SELECT * FROM lineups WHERE team_id = ?", [
+    teamId,
+  ]);
   if (!lineup) lineup = { team_id: teamId, ...emptyLineup };
   const players = await all(
     `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
@@ -42,7 +44,9 @@ export const saveLineup: RequestHandler = async (req, res) => {
     body.reserva1 ?? null,
     body.reserva2 ?? null,
   ];
-  const existing = await get("SELECT team_id FROM lineups WHERE team_id = ?", [teamId]);
+  const existing = await get("SELECT team_id FROM lineups WHERE team_id = ?", [
+    teamId,
+  ]);
   if (existing) {
     await run(
       `UPDATE lineups SET goleiro=?, ala_direito=?, ala_esquerdo=?, frente=?, zag=?, meio=?, reserva1=?, reserva2=?, updated_at=datetime('now') WHERE team_id=?`,

@@ -3,21 +3,24 @@ import { all, get, insert, run } from "../db";
 
 export const listPlayers: RequestHandler = async (_req, res) => {
   const rows = await all(
-    `SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON t.id = p.team_id ORDER BY p.created_at DESC`
+    `SELECT p.*, t.name as team_name FROM players p LEFT JOIN teams t ON t.id = p.team_id ORDER BY p.created_at DESC`,
   );
   res.json(rows);
 };
 
 export const createPlayer: RequestHandler = async (req, res) => {
   const { name, position, paid, team_id } = req.body ?? {};
-  if (!name || typeof name !== "string") return res.status(400).json({ error: "Nome é obrigatório" });
-  if (!position || !["GOL","DEF","ALAD","ALAE","MEI","ATA"].includes(position)) return res.status(400).json({ error: "Posição inválida" });
-  const id = await insert("INSERT INTO players (name, position, paid, team_id) VALUES (?, ?, ?, ?)", [
-    name,
-    position,
-    paid ? 1 : 0,
-    team_id ?? null,
-  ]);
+  if (!name || typeof name !== "string")
+    return res.status(400).json({ error: "Nome é obrigatório" });
+  if (
+    !position ||
+    !["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"].includes(position)
+  )
+    return res.status(400).json({ error: "Posição inválida" });
+  const id = await insert(
+    "INSERT INTO players (name, position, paid, team_id) VALUES (?, ?, ?, ?)",
+    [name, position, paid ? 1 : 0, team_id ?? null],
+  );
   const player = await get("SELECT * FROM players WHERE id = ?", [id]);
   res.status(201).json(player);
 };

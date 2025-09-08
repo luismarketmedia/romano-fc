@@ -2,7 +2,7 @@ import type { Player, Team, DrawRequest, DrawResponse } from "@shared/api";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const err = await res.json().catch(() => ({} as any));
+    const err = await res.json().catch(() => ({}) as any);
     throw new Error((err as any).error || `Erro ${res.status}`);
   }
   return (await res.json()) as T;
@@ -15,7 +15,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch (e: any) {
     const host = typeof window !== "undefined" ? window.location.host : "";
     if (host.includes(".fly.dev") && typeof window !== "undefined") {
-      const alt = window.location.origin.replace(".fly.dev", ".projects.builder.codes");
+      const alt = window.location.origin.replace(
+        ".fly.dev",
+        ".projects.builder.codes",
+      );
       const r2 = await fetch(new URL(path, alt).toString(), init);
       return await json<T>(r2);
     }
@@ -38,7 +41,8 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  deleteTeam: (id: number) => request<{ ok: true }>(`/api/teams/${id}`, { method: "DELETE" }),
+  deleteTeam: (id: number) =>
+    request<{ ok: true }>(`/api/teams/${id}`, { method: "DELETE" }),
 
   // Players
   listPlayers: () => request<Player[]>("/api/players"),
@@ -54,7 +58,8 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  deletePlayer: (id: number) => request<{ ok: true }>(`/api/players/${id}`, { method: "DELETE" }),
+  deletePlayer: (id: number) =>
+    request<{ ok: true }>(`/api/players/${id}`, { method: "DELETE" }),
 
   drawTeams: (data: DrawRequest) =>
     request<DrawResponse>("/api/draw", {
@@ -87,9 +92,14 @@ export const api = {
       body: JSON.stringify(data),
     }),
   deleteEvent: (matchId: number, eventId: number) =>
-    request<{ ok: true }>(`/api/matches/${matchId}/events/${eventId}`, { method: "DELETE" }),
+    request<{ ok: true }>(`/api/matches/${matchId}/events/${eventId}`, {
+      method: "DELETE",
+    }),
 
   // Dev utilities
-  devSeed: () => request<{ ok: true; teamCount: number }>("/api/dev/seed", { method: "POST" }),
+  devSeed: () =>
+    request<{ ok: true; teamCount: number }>("/api/dev/seed", {
+      method: "POST",
+    }),
   devClear: () => request<{ ok: true }>("/api/dev/clear", { method: "POST" }),
 };

@@ -3,10 +3,23 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { listTeams, createTeam, updateTeam, deleteTeam } from "./routes/teams";
-import { listPlayers, createPlayer, updatePlayer, deletePlayer } from "./routes/players";
+import {
+  listPlayers,
+  createPlayer,
+  updatePlayer,
+  deletePlayer,
+} from "./routes/players";
 import { drawTeams } from "./routes/draw";
 import { getLineup, saveLineup } from "./routes/lineup";
-import { listMatches, getMatch, createMatch, updateMatch, addEvent, deleteEvent, generateMatches } from "./routes/matches";
+import {
+  listMatches,
+  getMatch,
+  createMatch,
+  updateMatch,
+  addEvent,
+  deleteEvent,
+  generateMatches,
+} from "./routes/matches";
 import { seedAndDraw, clearDb } from "./routes/dev";
 
 export function createServer() {

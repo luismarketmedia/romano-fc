@@ -9,7 +9,7 @@ export const listMatches: RequestHandler = async (_req, res) => {
      FROM matches m
      JOIN teams ta ON ta.id = m.team_a_id
      JOIN teams tb ON tb.id = m.team_b_id
-     ORDER BY m.created_at DESC`
+     ORDER BY m.created_at DESC`,
   );
   res.json(rows);
 };
@@ -26,8 +26,14 @@ export const getMatch: RequestHandler = async (req, res) => {
     [id],
   );
   if (!match) return res.status(404).json({ error: "Partida não encontrada" });
-  const aPlayers = await all(`SELECT id, name FROM players WHERE team_id = ? ORDER BY name`, [match.team_a_id]);
-  const bPlayers = await all(`SELECT id, name FROM players WHERE team_id = ? ORDER BY name`, [match.team_b_id]);
+  const aPlayers = await all(
+    `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
+    [match.team_a_id],
+  );
+  const bPlayers = await all(
+    `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
+    [match.team_b_id],
+  );
   const events = await all(
     `SELECT e.*, p.name AS player_name FROM match_events e JOIN players p ON p.id = e.player_id WHERE e.match_id = ? ORDER BY e.created_at`,
     [id],
@@ -37,7 +43,8 @@ export const getMatch: RequestHandler = async (req, res) => {
 
 export const createMatch: RequestHandler = async (req, res) => {
   const { team_a_id, team_b_id, scheduled_at } = req.body ?? {};
-  if (!team_a_id || !team_b_id) return res.status(400).json({ error: "Times obrigatórios" });
+  if (!team_a_id || !team_b_id)
+    return res.status(400).json({ error: "Times obrigatórios" });
   const id = await insert(
     `INSERT INTO matches (team_a_id, team_b_id, scheduled_at) VALUES (?, ?, ?)`,
     [team_a_id, team_b_id, scheduled_at ?? null],
@@ -50,11 +57,10 @@ export const updateMatch: RequestHandler = async (req, res) => {
   const id = Number(req.params.id);
   const { status, scheduled_at } = req.body ?? {};
   if (!id) return res.status(400).json({ error: "ID inválido" });
-  await run(`UPDATE matches SET status = COALESCE(?, status), scheduled_at = COALESCE(?, scheduled_at) WHERE id = ?`, [
-    status ?? null,
-    scheduled_at ?? null,
-    id,
-  ]);
+  await run(
+    `UPDATE matches SET status = COALESCE(?, status), scheduled_at = COALESCE(?, scheduled_at) WHERE id = ?`,
+    [status ?? null, scheduled_at ?? null, id],
+  );
   const match = await get(`SELECT * FROM matches WHERE id = ?`, [id]);
   res.json(match);
 };
@@ -75,21 +81,29 @@ export const addEvent: RequestHandler = async (req, res) => {
 export const deleteEvent: RequestHandler = async (req, res) => {
   const matchId = Number(req.params.id);
   const eventId = Number(req.params.eventId);
-  if (!matchId || !eventId) return res.status(400).json({ error: "IDs inválidos" });
-  await run(`DELETE FROM match_events WHERE id = ? AND match_id = ?`, [eventId, matchId]);
+  if (!matchId || !eventId)
+    return res.status(400).json({ error: "IDs inválidos" });
+  await run(`DELETE FROM match_events WHERE id = ? AND match_id = ?`, [
+    eventId,
+    matchId,
+  ]);
   res.json({ ok: true });
 };
 
 export const generateMatches: RequestHandler = async (req, res) => {
   const { teamIds } = req.body ?? {};
-  if (!Array.isArray(teamIds) || teamIds.length < 2) return res.status(400).json({ error: "Lista de times inválida" });
+  if (!Array.isArray(teamIds) || teamIds.length < 2)
+    return res.status(400).json({ error: "Lista de times inválida" });
   const ids = [...teamIds].sort(() => Math.random() - 0.5);
   const created: any[] = [];
   for (let i = 0; i < ids.length; i += 2) {
     const a = ids[i];
     const b = ids[i + 1];
     if (a && b) {
-      const id = await insert(`INSERT INTO matches (team_a_id, team_b_id) VALUES (?, ?)`, [a, b]);
+      const id = await insert(
+        `INSERT INTO matches (team_a_id, team_b_id) VALUES (?, ?)`,
+        [a, b],
+      );
       const m = await get(`SELECT * FROM matches WHERE id = ?`, [id]);
       created.push(m);
     }
