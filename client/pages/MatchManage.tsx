@@ -124,12 +124,14 @@ function TeamColumn({
   teamId,
   players,
   events,
+  currentStarId,
   onEvent,
 }: {
   title: string;
   teamId?: number;
   players: { id: number; name: string }[];
   events: MatchEvent[];
+  currentStarId?: number;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
 }) {
   return (
