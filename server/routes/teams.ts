@@ -11,22 +11,31 @@ export const listTeams: RequestHandler = async (_req, res) => {
 };
 
 export const createTeam: RequestHandler = async (req, res) => {
-  const { name, color } = req.body ?? {};
+  const { name, color, line_count, formation, reserves_count } = req.body ?? {};
   if (!name || typeof name !== "string") {
     return res.status(400).json({ error: "Nome do time é obrigatório" });
   }
-  const id = await insert("INSERT INTO teams (name, color) VALUES (?, ?)", [name, color ?? null]);
+  const id = await insert("INSERT INTO teams (name, color, line_count, formation, reserves_count) VALUES (?, ?, ?, ?, ?)", [
+    name,
+    color ?? null,
+    line_count ?? null,
+    formation ?? null,
+    reserves_count ?? null,
+  ]);
   const team = await get("SELECT * FROM teams WHERE id = ?", [id]);
   res.status(201).json(team);
 };
 
 export const updateTeam: RequestHandler = async (req, res) => {
   const id = Number(req.params.id);
-  const { name, color } = req.body ?? {};
+  const { name, color, line_count, formation, reserves_count } = req.body ?? {};
   if (!id) return res.status(400).json({ error: "ID inválido" });
   const cur = await get("SELECT * FROM teams WHERE id = ?", [id]);
   if (!cur) return res.status(404).json({ error: "Time não encontrado" });
-  await run("UPDATE teams SET name = COALESCE(?, name), color = COALESCE(?, color) WHERE id = ?", [name ?? null, color ?? null, id]);
+  await run(
+    "UPDATE teams SET name = COALESCE(?, name), color = COALESCE(?, color), line_count = COALESCE(?, line_count), formation = COALESCE(?, formation), reserves_count = COALESCE(?, reserves_count) WHERE id = ?",
+    [name ?? null, color ?? null, line_count ?? null, formation ?? null, reserves_count ?? null, id],
+  );
   const team = await get("SELECT * FROM teams WHERE id = ?", [id]);
   res.json(team);
 };
