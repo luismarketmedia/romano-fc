@@ -8,71 +8,84 @@ async function json<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  try {
+    const r = await fetch(path, init);
+    return await json<T>(r);
+  } catch (e: any) {
+    const host = typeof window !== "undefined" ? window.location.host : "";
+    if (host.includes(".fly.dev") && typeof window !== "undefined") {
+      const alt = window.location.origin.replace(".fly.dev", ".projects.builder.codes");
+      const r2 = await fetch(new URL(path, alt).toString(), init);
+      return await json<T>(r2);
+    }
+    throw e;
+  }
+}
+
 export const api = {
   // Teams
-  listTeams: () => fetch("/api/teams").then((r) => json<Team[]>(r)),
+  listTeams: () => request<Team[]>("/api/teams"),
   createTeam: (data: Partial<Team>) =>
-    fetch("/api/teams", {
+    request<Team>("/api/teams", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<Team>(r)),
+    }),
   updateTeam: (id: number, data: Partial<Team>) =>
-    fetch(`/api/teams/${id}`, {
+    request<Team>(`/api/teams/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<Team>(r)),
-  deleteTeam: (id: number) =>
-    fetch(`/api/teams/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+    }),
+  deleteTeam: (id: number) => request<{ ok: true }>(`/api/teams/${id}`, { method: "DELETE" }),
 
   // Players
-  listPlayers: () => fetch("/api/players").then((r) => json<Player[]>(r)),
+  listPlayers: () => request<Player[]>("/api/players"),
   createPlayer: (data: Partial<Player>) =>
-    fetch("/api/players", {
+    request<Player>("/api/players", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<Player>(r)),
+    }),
   updatePlayer: (id: number, data: Partial<Player>) =>
-    fetch(`/api/players/${id}`, {
+    request<Player>(`/api/players/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<Player>(r)),
-  deletePlayer: (id: number) =>
-    fetch(`/api/players/${id}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+    }),
+  deletePlayer: (id: number) => request<{ ok: true }>(`/api/players/${id}`, { method: "DELETE" }),
 
   drawTeams: (data: DrawRequest) =>
-    fetch("/api/draw", {
+    request<DrawResponse>("/api/draw", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<DrawResponse>(r)),
+    }),
 
-  getLineup: (teamId: number) => fetch(`/api/teams/${teamId}/lineup`).then((r) => json<any>(r)),
+  getLineup: (teamId: number) => request<any>(`/api/teams/${teamId}/lineup`),
   saveLineup: (teamId: number, data: any) =>
-    fetch(`/api/teams/${teamId}/lineup`, {
+    request<any>(`/api/teams/${teamId}/lineup`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<any>(r)),
+    }),
 
   // Matches
-  listMatches: () => fetch(`/api/matches`).then((r) => json<any[]>(r)),
+  listMatches: () => request<any[]>(`/api/matches`),
   generateMatches: (teamIds: number[]) =>
-    fetch(`/api/matches/generate`, {
+    request<{ matches: any[] }>(`/api/matches/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teamIds }),
-    }).then((r) => json<{ matches: any[] }>(r)),
-  getMatch: (id: number) => fetch(`/api/matches/${id}`).then((r) => json<any>(r)),
+    }),
+  getMatch: (id: number) => request<any>(`/api/matches/${id}`),
   addEvent: (id: number, data: any) =>
-    fetch(`/api/matches/${id}/events`, {
+    request<any>(`/api/matches/${id}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
-    }).then((r) => json<any>(r)),
+    }),
   deleteEvent: (matchId: number, eventId: number) =>
-    fetch(`/api/matches/${matchId}/events/${eventId}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
+    request<{ ok: true }>(`/api/matches/${matchId}/events/${eventId}`, { method: "DELETE" }),
 };
