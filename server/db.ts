@@ -2,8 +2,8 @@ import initSqlJs, { Database as SqlDatabase } from "sql.js";
 import fs from "fs";
 import path from "path";
 
-export type Position = "GOL" | "DEF" | "MEI" | "ATA";
-export interface Team { id: number; name: string; color: string | null; created_at: string }
+export type Position = "GOL" | "DEF" | "ALAD" | "ALAE" | "MEI" | "ATA";
+export interface Team { id: number; name: string; color: string | null; created_at: string; line_count?: number | null; formation?: string | null; reserves_count?: number | null }
 export interface Player { id: number; name: string; position: Position; paid: number; team_id: number | null; created_at: string }
 
 const DB_PATH = path.join(process.cwd(), "data.sqlite");
