@@ -81,7 +81,7 @@ export interface Match {
   status: MatchStatus;
 }
 
-export type EventType = "GOAL" | "YELLOW" | "RED";
+export type EventType = "GOAL" | "YELLOW" | "RED" | "STAR";
 export interface MatchEvent {
   id: number;
   match_id: number;
