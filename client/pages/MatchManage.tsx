@@ -143,7 +143,7 @@ function TeamColumn({
           const g = my.filter((e) => e.type === "GOAL").length;
           const y = my.filter((e) => e.type === "YELLOW").length;
           const r = my.filter((e) => e.type === "RED").length;
-          const s = my.filter((e) => e.type === "STAR").length;
+          const isStar = currentStarId === p.id;
           return (
             <li
               key={p.id}
