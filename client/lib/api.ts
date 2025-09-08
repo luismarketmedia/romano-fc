@@ -88,4 +88,7 @@ export const api = {
     }),
   deleteEvent: (matchId: number, eventId: number) =>
     request<{ ok: true }>(`/api/matches/${matchId}/events/${eventId}`, { method: "DELETE" }),
+
+  // Dev utilities
+  devSeed: () => request<{ ok: true; teamCount: number }>("/api/dev/seed", { method: "POST" }),
 };
