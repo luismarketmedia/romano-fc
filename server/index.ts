@@ -38,5 +38,9 @@ export function createServer() {
   // Draw
   app.post("/api/draw", drawTeams);
 
+  // Lineup per team
+  app.get("/api/teams/:id/lineup", getLineup);
+  app.put("/api/teams/:id/lineup", saveLineup);
+
   return app;
 }
