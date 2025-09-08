@@ -342,6 +342,68 @@ function TeamDialog({ team }: { team?: Team }) {
   );
 }
 
+function EscalacaoDialog({ team }: { team: Team }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["lineup", team.id],
+    queryFn: () => api.getLineup(team.id),
+    enabled: open,
+  });
+  const players = (data?.players ?? []) as { id: number; name: string }[];
+  const initial = data?.lineup ?? { team_id: team.id };
+  const [form, setForm] = useState<any>(initial);
+
+  const mutate = useMutation({
+    mutationFn: (payload: any) => api.saveLineup(team.id, payload),
+    onSuccess: () => setOpen(false),
+  });
+
+  const role = (key: string, label: string) => (
+    <div>
+      <label className="mb-1 block text-sm">{label}</label>
+      <Select value={String(form?.[key] ?? "")} onValueChange={(v) => setForm({ ...form, [key]: v ? Number(v) : null })}>
+        <SelectTrigger>
+          <SelectValue placeholder="Escolha jogador" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="">—</SelectItem>
+          {players.map((p) => (
+            <SelectItem key={p.id} value={String(p.id)}>
+              {p.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setForm(initial); }}>
+      <DialogTrigger asChild>
+        <Button variant="secondary">Escalação</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Escalação — {team.name}</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
+          {role("goleiro", "Goleiro")}
+          {role("ala_direito", "Ala direito")}
+          {role("ala_esquerdo", "Ala esquerdo")}
+          {role("frente", "Frente")}
+          {role("zag", "Zagueiro")}
+          {role("meio", "Meio")}
+          {role("reserva1", "Reserva 1")}
+          {role("reserva2", "Reserva 2")}
+        </div>
+        <DialogFooter className="pt-2">
+          <Button onClick={() => mutate.mutate(form)}>Salvar escalação</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Sorteio() {
   const [teamCount, setTeamCount] = useState<number>(2);
   const [paidOnly, setPaidOnly] = useState<boolean>(true);
