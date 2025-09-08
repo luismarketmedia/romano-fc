@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pencil, Trash2, Users, CircleDollarSign } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -194,6 +195,11 @@ function PessoasTable() {
     mutationFn: (id: number) => api.deletePlayer(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
   });
+  const togglePaid = useMutation({
+    mutationFn: ({ id, paid }: { id: number; paid: boolean }) =>
+      api.updatePlayer(id, { paid }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
+  });
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
@@ -228,14 +234,31 @@ function PessoasTable() {
                 )}
               </TableCell>
               <TableCell>{p.team_name ?? "—"}</TableCell>
-              <TableCell className="text-right">
-                <PlayerDialog player={p} />
+              <TableCell className="text-right space-x-1">
                 <Button
-                  variant="destructive"
-                  className="ml-2"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) ? "Desmarcar pago" : "Marcar como pago"}
+                  title={(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) ? "Desmarcar pago" : "Marcar como pago"}
+                  onClick={() =>
+                    togglePaid.mutate({
+                      id: p.id,
+                      paid: !(typeof p.paid === "number" ? p.paid === 1 : !!p.paid),
+                    })
+                  }
+                >
+                  <CircleDollarSign className="h-4 w-4" />
+                </Button>
+                <PlayerDialog player={p} icon />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-0.5"
+                  aria-label="Remover jogador"
+                  title="Remover jogador"
                   onClick={() => del.mutate(p.id)}
                 >
-                  Remover
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -246,7 +269,7 @@ function PessoasTable() {
   );
 }
 
-function PlayerDialog({ player }: { player?: Player }) {
+function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
   const qc = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const [open, setOpen] = useState(false);
@@ -276,7 +299,13 @@ function PlayerDialog({ player }: { player?: Player }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {player ? (
-          <Button variant="outline">Editar</Button>
+          icon ? (
+            <Button variant="ghost" size="icon" aria-label="Editar jogador" title="Editar jogador">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline">Editar</Button>
+          )
         ) : (
           <Button>Novo Jogador</Button>
         )}
@@ -402,11 +431,17 @@ function TimesTable() {
                 )}
               </TableCell>
               <TableCell>{t.playerCount ?? "—"}</TableCell>
-              <TableCell className="text-right space-x-2">
-                <TeamDialog team={t} />
-                <EscalacaoDialog team={t} />
-                <Button variant="destructive" onClick={() => del.mutate(t.id)}>
-                  Remover
+              <TableCell className="text-right space-x-1">
+                <TeamDialog team={t} icon />
+                <EscalacaoDialog team={t} icon />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remover time"
+                  title="Remover time"
+                  onClick={() => del.mutate(t.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </TableCell>
             </TableRow>
@@ -417,7 +452,7 @@ function TimesTable() {
   );
 }
 
-function TeamDialog({ team }: { team?: Team }) {
+function TeamDialog({ team, icon }: { team?: Team; icon?: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(team?.name ?? "");
@@ -445,7 +480,13 @@ function TeamDialog({ team }: { team?: Team }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {team ? (
-          <Button variant="outline">Editar</Button>
+          icon ? (
+            <Button variant="ghost" size="icon" aria-label="Editar time" title="Editar time">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline">Editar</Button>
+          )
         ) : (
           <Button>Novo Time</Button>
         )}
@@ -514,7 +555,7 @@ function TeamDialog({ team }: { team?: Team }) {
   );
 }
 
-function EscalacaoDialog({ team }: { team: Team }) {
+function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
   const [open, setOpen] = useState(false);
   const { data } = useQuery({
     queryKey: ["lineup", team.id],
@@ -563,7 +604,13 @@ function EscalacaoDialog({ team }: { team: Team }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="secondary">Escalação</Button>
+        {icon ? (
+          <Button variant="ghost" size="icon" aria-label="Escalação" title="Escalação">
+            <Users className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="secondary">Escalação</Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
