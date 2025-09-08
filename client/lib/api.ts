@@ -57,4 +57,22 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }).then((r) => json<any>(r)),
+
+  // Matches
+  listMatches: () => fetch(`/api/matches`).then((r) => json<any[]>(r)),
+  generateMatches: (teamIds: number[]) =>
+    fetch(`/api/matches/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teamIds }),
+    }).then((r) => json<{ matches: any[] }>(r)),
+  getMatch: (id: number) => fetch(`/api/matches/${id}`).then((r) => json<any>(r)),
+  addEvent: (id: number, data: any) =>
+    fetch(`/api/matches/${id}/events`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then((r) => json<any>(r)),
+  deleteEvent: (matchId: number, eventId: number) =>
+    fetch(`/api/matches/${matchId}/events/${eventId}`, { method: "DELETE" }).then((r) => json<{ ok: true }>(r)),
 };
