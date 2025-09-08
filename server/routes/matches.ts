@@ -70,6 +70,22 @@ export const addEvent: RequestHandler = async (req, res) => {
   const { team_id, player_id, type, minute } = req.body ?? {};
   if (!matchId || !team_id || !player_id || !type)
     return res.status(400).json({ error: "Dados do evento incompletos" });
+
+  if (type === "STAR") {
+    const existing: any = await get(
+      `SELECT * FROM match_events WHERE match_id = ? AND type = 'STAR' ORDER BY created_at DESC LIMIT 1`,
+      [matchId],
+    );
+    if (existing) {
+      if (existing.player_id === player_id) {
+        await run(`DELETE FROM match_events WHERE id = ?`, [existing.id]);
+        return res.json({ ok: true, removed: true });
+      } else {
+        await run(`DELETE FROM match_events WHERE id = ?`, [existing.id]);
+      }
+    }
+  }
+
   const id = await insert(
     `INSERT INTO match_events (match_id, team_id, player_id, type, minute) VALUES (?, ?, ?, ?, ?)`,
     [matchId, team_id, player_id, type, minute ?? null],
