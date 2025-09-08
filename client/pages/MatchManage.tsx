@@ -147,28 +147,27 @@ function TeamColumn({
                 <BadgeCount label="⚽" count={g} />
                 <BadgeCount label="🟨" count={y} />
                 <BadgeCount label="🟥" count={r} />
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => onEvent(p.id, "STAR")}
-                >
-                  Destaque
-                </Button>
-                <Button size="sm" onClick={() => onEvent(p.id, "GOAL")}>Gol</Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onEvent(p.id, "YELLOW")}
-                >
-                  Amarelo
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onEvent(p.id, "RED")}
-                >
-                  Vermelho
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="Ações">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEvent(p.id, "STAR")}>
+                      Destaque
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEvent(p.id, "GOAL")}>
+                      Gol
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEvent(p.id, "YELLOW")}>
+                      Amarelo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onEvent(p.id, "RED")}>
+                      Vermelho
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </li>
           );
