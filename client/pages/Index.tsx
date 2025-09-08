@@ -38,6 +38,7 @@ function Header() {
         </div>
         <div className="flex items-center gap-2">
           <DevSeedButton />
+          <DevClearButton />
           <ThemeBadge />
         </div>
       </div>
