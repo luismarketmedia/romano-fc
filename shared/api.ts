@@ -11,7 +11,7 @@ export interface DemoResponse {
   message: string;
 }
 
-export type Position = "GOL" | "DEF" | "MEI" | "ATA";
+export type Position = "GOL" | "DEF" | "ALAD" | "ALAE" | "MEI" | "ATA";
 
 export interface Team {
   id: number;
@@ -19,6 +19,9 @@ export interface Team {
   color?: string | null;
   created_at?: string;
   playerCount?: number;
+  line_count?: number | null;
+  formation?: string | null;
+  reserves_count?: number | null;
 }
 
 export interface Player {
