@@ -307,6 +307,9 @@ function TeamDialog({ team }: { team?: Team }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(team?.name ?? "");
   const [color, setColor] = useState(team?.color ?? "");
+  const [lineCount, setLineCount] = useState<string>(team?.line_count != null ? String(team.line_count) : "");
+  const [formation, setFormation] = useState(team?.formation ?? "");
+  const [reservesCount, setReservesCount] = useState<string>(team?.reserves_count != null ? String(team.reserves_count) : "");
 
   const mut = useMutation({
     mutationFn: async (data: Partial<Team>) => {
@@ -337,9 +340,23 @@ function TeamDialog({ team }: { team?: Team }) {
             <label className="mb-1 block text-sm">Cor (opcional)</label>
             <Input value={color ?? ""} onChange={(e) => setColor(e.target.value)} placeholder="#ff6600 ou orange" />
           </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-sm">Qtd linha</label>
+              <Input value={lineCount} onChange={(e) => setLineCount(e.target.value)} placeholder="ex: 5" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm">Formação</label>
+              <Input value={formation} onChange={(e) => setFormation(e.target.value)} placeholder="ex: 1-2-1-1" />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm">Reservas</label>
+              <Input value={reservesCount} onChange={(e) => setReservesCount(e.target.value)} placeholder="ex: 2" />
+            </div>
+          </div>
         </div>
         <DialogFooter className="pt-2">
-          <Button onClick={() => mut.mutate({ name, color: color || null })}>Salvar</Button>
+          <Button onClick={() => mut.mutate({ name, color: color || null, line_count: lineCount ? Number(lineCount) : null, formation: formation || null, reserves_count: reservesCount ? Number(reservesCount) : null })}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -574,6 +591,7 @@ function MatchDialog({ matchId }: { matchId: number }) {
                 <SelectItem value="GOAL">Gol</SelectItem>
                 <SelectItem value="YELLOW">Amarelo</SelectItem>
                 <SelectItem value="RED">Vermelho</SelectItem>
+                <SelectItem value="STAR">Destaque</SelectItem>
               </SelectContent>
             </Select>
           </div>
