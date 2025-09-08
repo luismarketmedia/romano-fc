@@ -72,17 +72,14 @@ export const addEvent: RequestHandler = async (req, res) => {
     return res.status(400).json({ error: "Dados do evento incompletos" });
 
   if (type === "STAR") {
-    const existing: any = await get(
-      `SELECT * FROM match_events WHERE match_id = ? AND type = 'STAR' ORDER BY created_at DESC LIMIT 1`,
+    const existing: any[] = await all(
+      `SELECT id, player_id FROM match_events WHERE match_id = ? AND type = 'STAR'`,
       [matchId],
     );
-    if (existing) {
-      if (existing.player_id === player_id) {
-        await run(`DELETE FROM match_events WHERE id = ?`, [existing.id]);
-        return res.json({ ok: true, removed: true });
-      } else {
-        await run(`DELETE FROM match_events WHERE id = ?`, [existing.id]);
-      }
+    if (existing.length) {
+      const hasSame = existing.some((e) => e.player_id === player_id);
+      await run(`DELETE FROM match_events WHERE match_id = ? AND type = 'STAR'`, [matchId]);
+      if (hasSame) return res.json({ ok: true, removed: true });
     }
   }
 
