@@ -10,6 +10,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import MatchManage from "./pages/MatchManage";
+import Pessoas from "./pages/Pessoas";
+import Times from "./pages/Times";
+import Sorteio from "./pages/Sorteio";
+import Jogos from "./pages/Jogos";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,7 +34,11 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Pessoas />} />
+          <Route path="/pessoas" element={<Pessoas />} />
+          <Route path="/times" element={<Times />} />
+          <Route path="/sorteio" element={<Sorteio />} />
+          <Route path="/jogos" element={<Jogos />} />
           <Route path="/jogos/:id" element={<MatchManage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
