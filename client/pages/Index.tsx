@@ -567,8 +567,12 @@ export function TimesTable() {
               <TableCell className="text-right space-x-1">
                 <TeamDialog team={t} icon />
                 <EscalacaoDialog team={t} icon />
-                <Button variant="ghost" size="icon" aria-label="Remover time" title="Remover time" onClick={() => del.mutate(t.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" aria-label="Remover time" title="Remover time" disabled={del.isPending} onClick={() => del.mutate(t.id)}>
+                  {del.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>
