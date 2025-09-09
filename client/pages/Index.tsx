@@ -287,6 +287,7 @@ export function PessoasTable() {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>#</TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>Posição</TableHead>
             <TableHead>Pago</TableHead>
@@ -297,6 +298,7 @@ export function PessoasTable() {
         <TableBody>
           {paged.map((p) => (
             <TableRow key={p.id}>
+              <TableCell className="w-12">{p.number != null ? p.number : "—"}</TableCell>
               <TableCell className="font-medium">{p.name}</TableCell>
               <TableCell>{p.position}</TableCell>
               <TableCell>
@@ -443,6 +445,17 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="mb-1 block text-sm">Número da camisa</label>
+              <Input
+                type="number"
+                min={0}
+                max={99}
+                value={number}
+                onChange={(e) => setNumber(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="ex: 10"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter className="pt-2">
@@ -453,6 +466,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
                 position,
                 paid,
                 team_id: teamId === "none" ? null : Number(teamId),
+                number: number === "" ? null : Number(number),
               })
             }
           >
