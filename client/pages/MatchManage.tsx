@@ -142,6 +142,7 @@ function TeamColumn({
   events,
   currentStarId,
   onSetNumber,
+  onDeleteEvent,
   onEvent,
 }: {
   title: string;
@@ -150,6 +151,7 @@ function TeamColumn({
   events: MatchEvent[];
   currentStarId?: number;
   onSetNumber: (playerId: number, n: number | null) => void;
+  onDeleteEvent: (eventId: number) => void;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
 }) {
   return (
