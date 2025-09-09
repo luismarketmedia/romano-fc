@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { all, get, insert, run } from "../db";
+import { col, nowIso } from "../db";
 
 const emptyLineup = {
   goleiro: null,
@@ -15,16 +15,16 @@ const emptyLineup = {
 export const getLineup: RequestHandler = async (req, res) => {
   const teamId = Number(req.params.id);
   if (!teamId) return res.status(400).json({ error: "ID inválido" });
-  const team = await get("SELECT * FROM teams WHERE id = ?", [teamId]);
+  const teams = await col("teams");
+  const team = await teams.findOne({ id: teamId });
   if (!team) return res.status(404).json({ error: "Time não encontrado" });
-  let lineup: any = await get("SELECT * FROM lineups WHERE team_id = ?", [
-    teamId,
-  ]);
+  const lineups = await col<any>("lineups");
+  let lineup: any = await lineups.findOne({ team_id: teamId }, { projection: { _id: 0 } });
   if (!lineup) lineup = { team_id: teamId, ...emptyLineup };
-  const players = await all(
-    `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
-    [teamId],
-  );
+  const players = await (await col("players"))
+    .find({ team_id: teamId }, { projection: { _id: 0, id: 1, name: 1 } })
+    .sort({ name: 1 })
+    .toArray();
 
   // Sanitize lineup: remove players no longer on this team
   if (lineup && lineup.team_id) {
@@ -40,19 +40,22 @@ export const getLineup: RequestHandler = async (req, res) => {
       }
     }
     if (changed) {
-      await run(
-        `UPDATE lineups SET goleiro=?, ala_direito=?, ala_esquerdo=?, frente=?, zag=?, meio=?, reserva1=?, reserva2=?, updated_at=datetime('now') WHERE team_id=?`,
-        [
-          next.goleiro ?? null,
-          next.ala_direito ?? null,
-          next.ala_esquerdo ?? null,
-          next.frente ?? null,
-          next.zag ?? null,
-          next.meio ?? null,
-          next.reserva1 ?? null,
-          next.reserva2 ?? null,
-          teamId,
-        ],
+      await lineups.updateOne(
+        { team_id: teamId },
+        {
+          $set: {
+            goleiro: next.goleiro ?? null,
+            ala_direito: next.ala_direito ?? null,
+            ala_esquerdo: next.ala_esquerdo ?? null,
+            frente: next.frente ?? null,
+            zag: next.zag ?? null,
+            meio: next.meio ?? null,
+            reserva1: next.reserva1 ?? null,
+            reserva2: next.reserva2 ?? null,
+            updated_at: nowIso(),
+          },
+        },
+        { upsert: true },
       );
       lineup = next;
     }
@@ -64,33 +67,27 @@ export const getLineup: RequestHandler = async (req, res) => {
 export const saveLineup: RequestHandler = async (req, res) => {
   const teamId = Number(req.params.id);
   if (!teamId) return res.status(400).json({ error: "ID inválido" });
-  const team = await get("SELECT * FROM teams WHERE id = ?", [teamId]);
+  const team = await (await col("teams")).findOne({ id: teamId });
   if (!team) return res.status(404).json({ error: "Time não encontrado" });
   const body = req.body ?? {};
-  const values = [
-    body.goleiro ?? null,
-    body.ala_direito ?? null,
-    body.ala_esquerdo ?? null,
-    body.frente ?? null,
-    body.zag ?? null,
-    body.meio ?? null,
-    body.reserva1 ?? null,
-    body.reserva2 ?? null,
-  ];
-  const existing = await get("SELECT team_id FROM lineups WHERE team_id = ?", [
-    teamId,
-  ]);
-  if (existing) {
-    await run(
-      `UPDATE lineups SET goleiro=?, ala_direito=?, ala_esquerdo=?, frente=?, zag=?, meio=?, reserva1=?, reserva2=?, updated_at=datetime('now') WHERE team_id=?`,
-      [...values, teamId],
-    );
-  } else {
-    await run(
-      `INSERT INTO lineups (goleiro, ala_direito, ala_esquerdo, frente, zag, meio, reserva1, reserva2, team_id) VALUES (?,?,?,?,?,?,?,?,?)`,
-      [...values, teamId],
-    );
-  }
-  const lineup = await get("SELECT * FROM lineups WHERE team_id = ?", [teamId]);
+  const lineups = await col("lineups");
+  await lineups.updateOne(
+    { team_id: teamId },
+    {
+      $set: {
+        goleiro: body.goleiro ?? null,
+        ala_direito: body.ala_direito ?? null,
+        ala_esquerdo: body.ala_esquerdo ?? null,
+        frente: body.frente ?? null,
+        zag: body.zag ?? null,
+        meio: body.meio ?? null,
+        reserva1: body.reserva1 ?? null,
+        reserva2: body.reserva2 ?? null,
+        updated_at: nowIso(),
+      },
+    },
+    { upsert: true },
+  );
+  const lineup = await lineups.findOne({ team_id: teamId }, { projection: { _id: 0 } });
   res.json({ lineup });
 };
