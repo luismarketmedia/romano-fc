@@ -67,10 +67,18 @@ export function Header() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <DevSeedButton />
-          <DevClearButton />
-          <ThemeBadge />
+        <div className="flex items-center gap-4">
+          <nav className="hidden sm:flex items-center gap-4 text-sm">
+            <Link to="/pessoas" className="hover:underline">Pessoas</Link>
+            <Link to="/times" className="hover:underline">Times</Link>
+            <Link to="/sorteio" className="hover:underline">Sorteio</Link>
+            <Link to="/jogos" className="hover:underline">Jogos</Link>
+          </nav>
+          <div className="flex items-center gap-2">
+            <DevSeedButton />
+            <DevClearButton />
+            <ThemeBadge />
+          </div>
         </div>
       </div>
     </header>
