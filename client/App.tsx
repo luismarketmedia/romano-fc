@@ -14,7 +14,7 @@ import Pessoas from "./pages/Pessoas";
 import Times from "./pages/Times";
 import Sorteio from "./pages/Sorteio";
 import Jogos from "./pages/Jogos";
-import GlobalLoader from "@/components/GlobalLoader";
+import GlobalLoader from "./components/GlobalLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
