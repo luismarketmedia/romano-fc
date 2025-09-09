@@ -78,7 +78,16 @@ export async function getDb(): Promise<Db> {
       options.tlsAllowInvalidHostnames = true;
     }
     cachedClient = new MongoClient(uri, options);
-    await cachedClient.connect();
+    try {
+      await cachedClient.connect();
+    } catch (e) {
+      try {
+        await cachedClient.close();
+      } catch {}
+      cachedClient = null;
+      cachedDb = null;
+      throw new Error("DATABASE_CONNECTION_FAILED");
+    }
   }
   cachedDb = cachedClient.db(dbName);
 
