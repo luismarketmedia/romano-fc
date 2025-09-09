@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection } from "mongodb";
+import { MongoClient, Db, Collection, ServerApiVersion } from "mongodb";
 import os from "os";
 
 export type Position = "GOL" | "DEF" | "ALAD" | "ALAE" | "MEI" | "ATA";
@@ -67,9 +67,17 @@ export async function getDb(): Promise<Db> {
     throw new Error("MONGODB_URI is missing or invalid");
   }
   if (!cachedClient) {
-    cachedClient = new MongoClient(uri, {
+    const insecure = process.env.MONGODB_TLS_INSECURE === "1";
+    const options: any = {
       serverSelectionTimeoutMS: 10000,
-    });
+      serverApi: { version: ServerApiVersion.v1 },
+    };
+    if (insecure) {
+      options.tls = true;
+      options.tlsAllowInvalidCertificates = true;
+      options.tlsAllowInvalidHostnames = true;
+    }
+    cachedClient = new MongoClient(uri, options);
     await cachedClient.connect();
   }
   cachedDb = cachedClient.db(dbName);
