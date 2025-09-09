@@ -1236,6 +1236,7 @@ export function Jogos() {
         <TableHeader>
           <TableRow>
             <TableHead>Partida</TableHead>
+            <TableHead>Fase</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Placar</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -1246,6 +1247,11 @@ export function Jogos() {
             <TableRow key={m.id}>
               <TableCell>
                 {m.team_a_name} vs {m.team_b_name}
+              </TableCell>
+              <TableCell>
+                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {m.stage ?? "classificatoria"}
+                </span>
               </TableCell>
               <TableCell className="uppercase text-xs text-muted-foreground">
                 {m.status}

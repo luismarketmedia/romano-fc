@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type { MatchEvent } from "@shared/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -185,14 +186,22 @@ export default function MatchManage() {
     setTimer((t) => ({ half: (t.half === 1 ? 2 : 2) as 1 | 2, isRunning: false, baseElapsed: 0, startedAt: 0 }));
   };
 
+  const setStage = useMutation({
+    mutationFn: (stage: any) => api.updateMatch(matchId, { stage }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <Button variant="outline" onClick={() => navigate(-1)}>
             Voltar
           </Button>
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 min-w-[240px]">
             <div className="text-xl font-bold">
               {q.data?.match.team_a_name} <span className="px-2">vs</span>{" "}
               {q.data?.match.team_b_name}
@@ -209,6 +218,23 @@ export default function MatchManage() {
               <div className="text-lg font-semibold tabular-nums">
                 {mmss(Math.max(0, halfDurMs - currentElapsed))}
               </div>
+            </div>
+            <div className="w-40">
+              <Select
+                value={q.data?.match.stage ?? "classificatoria"}
+                onValueChange={(v) => setStage.mutate(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="classificatoria">Classificatório</SelectItem>
+                  <SelectItem value="oitavas">Oitavas</SelectItem>
+                  <SelectItem value="quartas">Quartas</SelectItem>
+                  <SelectItem value="semi">Semi</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button variant="secondary" onClick={toggleRun}>
               {timer.isRunning ? "Pausar" : "Iniciar"}

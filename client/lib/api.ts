@@ -92,6 +92,12 @@ export const api = {
       body: JSON.stringify({ teamIds }),
     }),
   getMatch: (id: number) => request<any>(`/api/matches/${id}`),
+  updateMatch: (id: number, data: any) =>
+    request<any>(`/api/matches/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   addEvent: (id: number, data: any) =>
     request<any>(`/api/matches/${id}/events`, {
       method: "POST",

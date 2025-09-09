@@ -42,12 +42,12 @@ export const getMatch: RequestHandler = async (req, res) => {
 };
 
 export const createMatch: RequestHandler = async (req, res) => {
-  const { team_a_id, team_b_id, scheduled_at } = req.body ?? {};
+  const { team_a_id, team_b_id, scheduled_at, stage } = req.body ?? {};
   if (!team_a_id || !team_b_id)
     return res.status(400).json({ error: "Times obrigatórios" });
   const id = await insert(
-    `INSERT INTO matches (team_a_id, team_b_id, scheduled_at) VALUES (?, ?, ?)`,
-    [team_a_id, team_b_id, scheduled_at ?? null],
+    `INSERT INTO matches (team_a_id, team_b_id, scheduled_at, stage) VALUES (?, ?, ?, COALESCE(?, 'classificatoria'))`,
+    [team_a_id, team_b_id, scheduled_at ?? null, stage ?? null],
   );
   const match = await get(`SELECT * FROM matches WHERE id = ?`, [id]);
   res.status(201).json(match);
@@ -55,11 +55,11 @@ export const createMatch: RequestHandler = async (req, res) => {
 
 export const updateMatch: RequestHandler = async (req, res) => {
   const id = Number(req.params.id);
-  const { status, scheduled_at } = req.body ?? {};
+  const { status, scheduled_at, stage } = req.body ?? {};
   if (!id) return res.status(400).json({ error: "ID inválido" });
   await run(
-    `UPDATE matches SET status = COALESCE(?, status), scheduled_at = COALESCE(?, scheduled_at) WHERE id = ?`,
-    [status ?? null, scheduled_at ?? null, id],
+    `UPDATE matches SET status = COALESCE(?, status), scheduled_at = COALESCE(?, scheduled_at), stage = COALESCE(?, stage) WHERE id = ?`,
+    [status ?? null, scheduled_at ?? null, stage ?? null, id],
   );
   const match = await get(`SELECT * FROM matches WHERE id = ?`, [id]);
   res.json(match);
