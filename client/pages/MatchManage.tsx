@@ -129,7 +129,7 @@ function TeamColumn({
 }: {
   title: string;
   teamId?: number;
-  players: { id: number; name: string }[];
+  players: { id: number; name: string; number?: number | null }[];
   events: MatchEvent[];
   currentStarId?: number;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
