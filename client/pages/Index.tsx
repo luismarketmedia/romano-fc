@@ -674,7 +674,7 @@ export function TimesTable() {
               <TableCell>{t.playerCount ?? "—"}</TableCell>
               <TableCell className="text-right space-x-1">
                 <TeamDialog team={t} icon />
-                <EscalacaoDialog team={t} icon />
+                <TeamPlayersDialog team={t} icon />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -920,6 +920,98 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
             Salvar escalação
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const playersQ = useQuery({ queryKey: ["players"], queryFn: api.listPlayers, enabled: open });
+  const matchesQ = useQuery({ queryKey: ["matches"], queryFn: api.listMatches, enabled: open });
+
+  const teamPlayers = useMemo(() =>
+    (playersQ.data ?? []).filter((p) => p.team_id === team.id),
+  [playersQ.data, team.id]);
+
+  const teamMatchIds = useMemo(() =>
+    (matchesQ.data ?? [])
+      .filter((m: any) => m.team_a_id === team.id || m.team_b_id === team.id)
+      .map((m: any) => m.id),
+  [matchesQ.data, team.id]);
+
+  const eventsQ = useQuery({
+    queryKey: ["team-events", team.id, teamMatchIds],
+    enabled: open && teamMatchIds.length > 0,
+    queryFn: async () => {
+      const details = await Promise.all(teamMatchIds.map((id: number) => api.getMatch(id)));
+      return details.flatMap((d: any) => d.events as any[]);
+    },
+  });
+
+  const statsByPlayer = useMemo(() => {
+    const byId: Record<number, { goals: number; yellow: number; red: number; star: number }> = {};
+    const events = (eventsQ.data ?? []) as any[];
+    for (const p of teamPlayers) byId[p.id] = { goals: 0, yellow: 0, red: 0, star: 0 };
+    for (const e of events) {
+      if (!byId[e.player_id]) continue;
+      if (e.type === "GOAL") byId[e.player_id].goals++;
+      else if (e.type === "YELLOW") byId[e.player_id].yellow++;
+      else if (e.type === "RED") byId[e.player_id].red++;
+      else if (e.type === "STAR") byId[e.player_id].star++;
+    }
+    return byId;
+  }, [eventsQ.data, teamPlayers]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        {icon ? (
+          <Button variant="ghost" size="icon" aria-label="Jogadores" title="Jogadores">
+            <Users className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="secondary">Jogadores</Button>
+        )}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Jogadores — {team.name}</DialogTitle>
+        </DialogHeader>
+        <div className="pt-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>#</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Gols</TableHead>
+                <TableHead>Amarelos</TableHead>
+                <TableHead>Vermelhos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teamPlayers.map((p) => {
+                const s = statsByPlayer[p.id] ?? { goals: 0, yellow: 0, red: 0, star: 0 };
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="w-12">{p.number != null ? p.number : "—"}</TableCell>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell>{s.goals || "—"}</TableCell>
+                    <TableCell>{s.yellow || "—"}</TableCell>
+                    <TableCell>{s.red || "—"}</TableCell>
+                  </TableRow>
+                );
+              })}
+              {teamPlayers.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                    Nenhum jogador neste time
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </DialogContent>
     </Dialog>
   );
