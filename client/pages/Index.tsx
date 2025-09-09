@@ -328,8 +328,12 @@ export function PessoasTable() {
                   </Button>
                 )}
                 <PlayerDialog player={p} icon />
-                <Button variant="ghost" size="icon" className="ml-0.5" aria-label="Remover jogador" title="Remover jogador" onClick={() => del.mutate(p.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="ml-0.5" aria-label="Remover jogador" title="Remover jogador" disabled={del.isPending} onClick={() => del.mutate(p.id)}>
+                  {del.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>
