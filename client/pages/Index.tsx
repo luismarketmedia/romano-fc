@@ -851,9 +851,10 @@ export function Sorteio() {
         <div className="flex items-end">
           <Button
             className="w-full"
-            disabled={!result || !apply}
+            disabled={!result || !apply || genMut.isPending}
             onClick={gerarJogos}
           >
+            {genMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Gerar jogos
           </Button>
         </div>
