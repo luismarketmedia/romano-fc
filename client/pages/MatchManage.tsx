@@ -147,6 +147,9 @@ function TeamColumn({
   players,
   events,
   currentStarId,
+  isAdding,
+  isDeleting,
+  isNumbering,
   onSetNumber,
   onDeleteEvent,
   onEvent,
@@ -156,6 +159,9 @@ function TeamColumn({
   players: { id: number; name: string; number?: number | null }[];
   events: MatchEvent[];
   currentStarId?: number;
+  isAdding: boolean;
+  isDeleting: boolean;
+  isNumbering: boolean;
   onSetNumber: (playerId: number, n: number | null) => void;
   onDeleteEvent: (eventId: number) => void;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
