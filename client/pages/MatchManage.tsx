@@ -31,12 +31,18 @@ export default function MatchManage() {
 
   const add = useMutation({
     mutationFn: (payload: any) => api.addEvent(matchId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
   });
 
   const del = useMutation({
     mutationFn: (eventId: number) => api.deleteEvent(matchId, eventId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
   });
 
   const setNumber = useMutation({
