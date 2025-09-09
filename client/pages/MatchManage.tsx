@@ -160,9 +160,12 @@ function TeamColumn({
       <ul className="space-y-2">
         {players.map((p) => {
           const my = events.filter((e) => e.player_id === p.id);
-          const g = my.filter((e) => e.type === "GOAL").length;
-          const y = my.filter((e) => e.type === "YELLOW").length;
-          const r = my.filter((e) => e.type === "RED").length;
+          const gEvents = my.filter((e) => e.type === "GOAL");
+          const yEvents = my.filter((e) => e.type === "YELLOW");
+          const rEvents = my.filter((e) => e.type === "RED");
+          const g = gEvents.length;
+          const y = yEvents.length;
+          const r = rEvents.length;
           const isStar = currentStarId === p.id;
           return (
             <li
