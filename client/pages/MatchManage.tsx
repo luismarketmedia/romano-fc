@@ -197,9 +197,9 @@ function TeamColumn({
               </span>
               <div className="flex items-center gap-2">
                 <StarBadge active={isStar} />
-                <BadgeCount label="⚽" count={g} />
-                <BadgeCount label="🟨" count={y} />
-                <BadgeCount label="🟥" count={r} />
+                <BadgeCount label="⚽" count={g} onClick={g ? () => onDeleteEvent((gEvents[g - 1] as any).id) : undefined} />
+                <BadgeCount label="🟨" count={y} onClick={y ? () => onDeleteEvent((yEvents[y - 1] as any).id) : undefined} />
+                <BadgeCount label="🟥" count={r} onClick={r ? () => onDeleteEvent((rEvents[r - 1] as any).id) : undefined} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label="Ações">
