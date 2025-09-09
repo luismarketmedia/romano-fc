@@ -8,20 +8,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     const r = await fetch(path, init);
     if (r.ok) return await json<T>(r);
-    const err = await r.json().catch(() => ({} as any));
+    const err = await r.json().catch(() => ({}) as any);
     throw new Error((err as any).error || `Erro ${r.status}`);
   } catch (e: any) {
     const isNetworkFailure =
-      e?.name === "TypeError" || /Failed to fetch|NetworkError/i.test(e?.message || "");
+      e?.name === "TypeError" ||
+      /Failed to fetch|NetworkError/i.test(e?.message || "");
     const host = typeof window !== "undefined" ? window.location.host : "";
-    if (isNetworkFailure && host.includes(".fly.dev") && typeof window !== "undefined") {
+    if (
+      isNetworkFailure &&
+      host.includes(".fly.dev") &&
+      typeof window !== "undefined"
+    ) {
       const alt = window.location.origin.replace(
         ".fly.dev",
         ".projects.builder.codes",
       );
       const r2 = await fetch(new URL(path, alt).toString(), init);
       if (r2.ok) return await json<T>(r2);
-      const err2 = await r2.json().catch(() => ({} as any));
+      const err2 = await r2.json().catch(() => ({}) as any);
       throw new Error((err2 as any).error || `Erro ${r2.status}`);
     }
     throw e;

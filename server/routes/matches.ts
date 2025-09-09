@@ -78,7 +78,10 @@ export const addEvent: RequestHandler = async (req, res) => {
     );
     if (existing.length) {
       const hasSame = existing.some((e) => e.player_id === player_id);
-      await run(`DELETE FROM match_events WHERE match_id = ? AND type = 'STAR'`, [matchId]);
+      await run(
+        `DELETE FROM match_events WHERE match_id = ? AND type = 'STAR'`,
+        [matchId],
+      );
       if (hasSame) return res.json({ ok: true, removed: true });
     }
   }

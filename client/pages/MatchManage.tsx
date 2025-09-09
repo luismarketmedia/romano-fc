@@ -72,7 +72,9 @@ export default function MatchManage() {
     return (
       <div className="p-4">
         <div className="text-sm">ID de jogo inválido</div>
-        <Button className="mt-3" onClick={() => navigate("/")}>Voltar</Button>
+        <Button className="mt-3" onClick={() => navigate("/")}>
+          Voltar
+        </Button>
       </div>
     );
   }
@@ -81,7 +83,9 @@ export default function MatchManage() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Voltar
+          </Button>
           <div className="text-center flex-1">
             <div className="text-xl font-bold">
               {q.data?.match.team_a_name} <span className="px-2">vs</span>{" "}
@@ -103,7 +107,9 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
-            onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
+            onSetNumber={(playerId, n) =>
+              setNumber.mutate({ id: playerId, number: n })
+            }
             onDeleteEvent={async (eventId) => del.mutateAsync(eventId)}
             onEvent={(playerId, type) =>
               add.mutate({
@@ -122,7 +128,9 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
-            onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
+            onSetNumber={(playerId, n) =>
+              setNumber.mutate({ id: playerId, number: n })
+            }
             onDeleteEvent={async (eventId) => del.mutateAsync(eventId)}
             onEvent={(playerId, type) =>
               add.mutate({
@@ -176,7 +184,9 @@ function TeamColumn({
           const y = yEvents.length;
           const r = rEvents.length;
           const lastGoalId = (gEvents[g - 1] as any)?.id as number | undefined;
-          const lastYellowId = (yEvents[y - 1] as any)?.id as number | undefined;
+          const lastYellowId = (yEvents[y - 1] as any)?.id as
+            | number
+            | undefined;
           const lastRedId = (rEvents[r - 1] as any)?.id as number | undefined;
           const isStar = currentStarId === p.id;
           const handleUndo = async (id?: number) => {
@@ -206,7 +216,11 @@ function TeamColumn({
                     if (e.key === "Enter") {
                       const v = (e.target as HTMLInputElement).value;
                       const n = v === "" ? null : Number(v);
-                      if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                      if (
+                        n !== null &&
+                        (!Number.isFinite(n) || n < 0 || n > 99)
+                      )
+                        return;
                       onSetNumber(p.id, n);
                       (e.target as HTMLInputElement).blur();
                     }
@@ -214,7 +228,8 @@ function TeamColumn({
                   onBlur={(e) => {
                     const v = e.target.value;
                     const n = v === "" ? null : Number(v);
-                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99))
+                      return;
                     onSetNumber(p.id, n);
                   }}
                 />
@@ -222,12 +237,32 @@ function TeamColumn({
               </span>
               <div className="flex items-center gap-2">
                 <StarBadge active={isStar} />
-                <BadgeCount label="⚽" count={g} loading={deletingId === lastGoalId} onClick={g ? () => handleUndo(lastGoalId) : undefined} />
-                <BadgeCount label="🟨" count={y} loading={deletingId === lastYellowId} onClick={y ? () => handleUndo(lastYellowId) : undefined} />
-                <BadgeCount label="🟥" count={r} loading={deletingId === lastRedId} onClick={r ? () => handleUndo(lastRedId) : undefined} />
+                <BadgeCount
+                  label="⚽"
+                  count={g}
+                  loading={deletingId === lastGoalId}
+                  onClick={g ? () => handleUndo(lastGoalId) : undefined}
+                />
+                <BadgeCount
+                  label="🟨"
+                  count={y}
+                  loading={deletingId === lastYellowId}
+                  onClick={y ? () => handleUndo(lastYellowId) : undefined}
+                />
+                <BadgeCount
+                  label="🟥"
+                  count={r}
+                  loading={deletingId === lastRedId}
+                  onClick={r ? () => handleUndo(lastRedId) : undefined}
+                />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Ações" disabled={isAdding}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Ações"
+                      disabled={isAdding}
+                    >
                       {isAdding ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
@@ -236,16 +271,28 @@ function TeamColumn({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "STAR")}>
+                    <DropdownMenuItem
+                      disabled={isAdding}
+                      onClick={() => onEvent(p.id, "STAR")}
+                    >
                       Destaque
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "GOAL")}>
+                    <DropdownMenuItem
+                      disabled={isAdding}
+                      onClick={() => onEvent(p.id, "GOAL")}
+                    >
                       Gol
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "YELLOW")}>
+                    <DropdownMenuItem
+                      disabled={isAdding}
+                      onClick={() => onEvent(p.id, "YELLOW")}
+                    >
                       Amarelo
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "RED")}>
+                    <DropdownMenuItem
+                      disabled={isAdding}
+                      onClick={() => onEvent(p.id, "RED")}
+                    >
                       Vermelho
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -259,8 +306,19 @@ function TeamColumn({
   );
 }
 
-function BadgeCount({ label, count, loading, onClick }: { label: string; count: number; loading?: boolean; onClick?: () => void }) {
-  if (!count) return <span className="text-xs text-muted-foreground">{label}</span>;
+function BadgeCount({
+  label,
+  count,
+  loading,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  loading?: boolean;
+  onClick?: () => void;
+}) {
+  if (!count)
+    return <span className="text-xs text-muted-foreground">{label}</span>;
   const Cmp: any = onClick ? "button" : "span";
   return (
     <Cmp
@@ -279,8 +337,7 @@ function BadgeCount({ label, count, loading, onClick }: { label: string; count: 
 }
 
 function StarBadge({ active }: { active: boolean }) {
-  if (!active)
-    return null;
+  if (!active) return null;
   return (
     <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-100">
       ⭐

@@ -17,7 +17,9 @@ export const createPlayer: RequestHandler = async (req, res) => {
     !["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"].includes(position)
   )
     return res.status(400).json({ error: "Posição inválida" });
-  const jersey = Number.isFinite(Number(number)) ? Math.max(0, Math.min(99, Number(number))) : null;
+  const jersey = Number.isFinite(Number(number))
+    ? Math.max(0, Math.min(99, Number(number)))
+    : null;
   const id = await insert(
     "INSERT INTO players (name, position, paid, team_id, number) VALUES (?, ?, ?, ?, ?)",
     [name, position, paid ? 1 : 0, team_id ?? null, jersey],
@@ -34,7 +36,12 @@ export const updatePlayer: RequestHandler = async (req, res) => {
   const { name, position, paid, team_id, number } = req.body ?? {};
   const nextPaid = typeof paid === "boolean" ? (paid ? 1 : 0) : null;
   const nextTeamId = team_id === undefined ? cur.team_id : team_id;
-  const jersey = number === undefined ? null : (Number.isFinite(Number(number)) ? Math.max(0, Math.min(99, Number(number))) : null);
+  const jersey =
+    number === undefined
+      ? null
+      : Number.isFinite(Number(number))
+        ? Math.max(0, Math.min(99, Number(number)))
+        : null;
   await run(
     "UPDATE players SET name = COALESCE(?, name), position = COALESCE(?, position), paid = COALESCE(?, paid), team_id = ?, number = COALESCE(?, number) WHERE id = ?",
     [name ?? null, position ?? null, nextPaid, nextTeamId, jersey, id],

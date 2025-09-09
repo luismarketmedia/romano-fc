@@ -152,7 +152,9 @@ function migrate(db: SqlDatabase) {
 
   // Add number column if missing (for existing correct schema)
   const pcols = db.exec("PRAGMA table_info('players')");
-  const pcolNames = new Set<string>((pcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])));
+  const pcolNames = new Set<string>(
+    (pcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
+  );
   if (!pcolNames.has("number")) {
     db.run("ALTER TABLE players ADD COLUMN number INTEGER NULL");
   }
@@ -180,7 +182,9 @@ function migrate(db: SqlDatabase) {
       "INSERT INTO match_events (id, match_id, team_id, player_id, type, minute, created_at) SELECT id, match_id, team_id, player_id, type, minute, created_at FROM match_events_old",
     );
     db.run("DROP TABLE match_events_old");
-    db.run("CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id)");
+    db.run(
+      "CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id)",
+    );
   }
 }
 
