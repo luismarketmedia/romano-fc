@@ -70,7 +70,12 @@ export interface LineupResponse {
 
 export type MatchStatus = "scheduled" | "playing" | "finished";
 
-export type MatchStage = "classificatoria" | "oitavas" | "quartas" | "semi" | "final";
+export type MatchStage =
+  | "classificatoria"
+  | "oitavas"
+  | "quartas"
+  | "semi"
+  | "final";
 
 export interface Match {
   id: number;

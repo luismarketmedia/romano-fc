@@ -60,9 +60,7 @@ export function Header() {
             className="h-10 w-10 rounded-md shadow-sm"
           />
           <div>
-            <h1 className="text-xl font-extrabold tracking-tight">
-              Romano FC
-            </h1>
+            <h1 className="text-xl font-extrabold tracking-tight">Romano FC</h1>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -364,7 +362,11 @@ export function PessoasTable() {
                     if (e.key === "Enter") {
                       const v = (e.target as HTMLInputElement).value;
                       const n = v === "" ? null : Number(v);
-                      if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                      if (
+                        n !== null &&
+                        (!Number.isFinite(n) || n < 0 || n > 99)
+                      )
+                        return;
                       setNumber.mutate({ id: p.id, number: n });
                       (e.target as HTMLInputElement).blur();
                     }
@@ -372,7 +374,8 @@ export function PessoasTable() {
                   onBlur={(e) => {
                     const v = e.target.value;
                     const n = v === "" ? null : Number(v);
-                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99))
+                      return;
                     setNumber.mutate({ id: p.id, number: n });
                   }}
                 />
@@ -622,7 +625,10 @@ export function TimesTable() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const matchesQ = useQuery({ queryKey: ["matches"], queryFn: api.listMatches });
+  const matchesQ = useQuery({
+    queryKey: ["matches"],
+    queryFn: api.listMatches,
+  });
   const teams = teamsQ.data ?? [];
 
   const statsByTeam = useMemo(() => {
@@ -742,9 +748,15 @@ export function TimesTable() {
                 )}
               </TableCell>
               <TableCell>{t.playerCount ?? "—"}</TableCell>
-              <TableCell className="text-right">{statsByTeam[t.id]?.points ?? 0}</TableCell>
-              <TableCell className="text-right">{statsByTeam[t.id]?.gf ?? 0}</TableCell>
-              <TableCell className="text-right">{statsByTeam[t.id]?.ga ?? 0}</TableCell>
+              <TableCell className="text-right">
+                {statsByTeam[t.id]?.points ?? 0}
+              </TableCell>
+              <TableCell className="text-right">
+                {statsByTeam[t.id]?.gf ?? 0}
+              </TableCell>
+              <TableCell className="text-right">
+                {statsByTeam[t.id]?.ga ?? 0}
+              </TableCell>
               <TableCell className="text-right space-x-1">
                 <TeamDialog team={t} icon />
                 <TeamPlayersDialog team={t} icon />
@@ -1000,32 +1012,49 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
 
 function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
   const [open, setOpen] = useState(false);
-  const playersQ = useQuery({ queryKey: ["players"], queryFn: api.listPlayers, enabled: open });
-  const matchesQ = useQuery({ queryKey: ["matches"], queryFn: api.listMatches, enabled: open });
+  const playersQ = useQuery({
+    queryKey: ["players"],
+    queryFn: api.listPlayers,
+    enabled: open,
+  });
+  const matchesQ = useQuery({
+    queryKey: ["matches"],
+    queryFn: api.listMatches,
+    enabled: open,
+  });
 
-  const teamPlayers = useMemo(() =>
-    (playersQ.data ?? []).filter((p) => p.team_id === team.id),
-  [playersQ.data, team.id]);
+  const teamPlayers = useMemo(
+    () => (playersQ.data ?? []).filter((p) => p.team_id === team.id),
+    [playersQ.data, team.id],
+  );
 
-  const teamMatchIds = useMemo(() =>
-    (matchesQ.data ?? [])
-      .filter((m: any) => m.team_a_id === team.id || m.team_b_id === team.id)
-      .map((m: any) => m.id),
-  [matchesQ.data, team.id]);
+  const teamMatchIds = useMemo(
+    () =>
+      (matchesQ.data ?? [])
+        .filter((m: any) => m.team_a_id === team.id || m.team_b_id === team.id)
+        .map((m: any) => m.id),
+    [matchesQ.data, team.id],
+  );
 
   const eventsQ = useQuery({
     queryKey: ["team-events", team.id, teamMatchIds],
     enabled: open && teamMatchIds.length > 0,
     queryFn: async () => {
-      const details = await Promise.all(teamMatchIds.map((id: number) => api.getMatch(id)));
+      const details = await Promise.all(
+        teamMatchIds.map((id: number) => api.getMatch(id)),
+      );
       return details.flatMap((d: any) => d.events as any[]);
     },
   });
 
   const statsByPlayer = useMemo(() => {
-    const byId: Record<number, { goals: number; yellow: number; red: number; star: number }> = {};
+    const byId: Record<
+      number,
+      { goals: number; yellow: number; red: number; star: number }
+    > = {};
     const events = (eventsQ.data ?? []) as any[];
-    for (const p of teamPlayers) byId[p.id] = { goals: 0, yellow: 0, red: 0, star: 0 };
+    for (const p of teamPlayers)
+      byId[p.id] = { goals: 0, yellow: 0, red: 0, star: 0 };
     for (const e of events) {
       if (!byId[e.player_id]) continue;
       if (e.type === "GOAL") byId[e.player_id].goals++;
@@ -1040,7 +1069,12 @@ function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {icon ? (
-          <Button variant="ghost" size="icon" aria-label="Jogadores" title="Jogadores">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Jogadores"
+            title="Jogadores"
+          >
             <Users className="h-4 w-4" />
           </Button>
         ) : (
@@ -1064,10 +1098,17 @@ function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
             </TableHeader>
             <TableBody>
               {teamPlayers.map((p) => {
-                const s = statsByPlayer[p.id] ?? { goals: 0, yellow: 0, red: 0, star: 0 };
+                const s = statsByPlayer[p.id] ?? {
+                  goals: 0,
+                  yellow: 0,
+                  red: 0,
+                  star: 0,
+                };
                 return (
                   <TableRow key={p.id}>
-                    <TableCell className="w-12">{p.number != null ? p.number : "—"}</TableCell>
+                    <TableCell className="w-12">
+                      {p.number != null ? p.number : "—"}
+                    </TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
                     <TableCell>{s.goals || "���"}</TableCell>
                     <TableCell>{s.yellow || "—"}</TableCell>
@@ -1077,7 +1118,10 @@ function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
               })}
               {teamPlayers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-sm text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-sm text-muted-foreground"
+                  >
                     Nenhum jogador neste time
                   </TableCell>
                 </TableRow>
@@ -1228,19 +1272,32 @@ export function Jogos() {
     mutationFn: async () => {
       const teams = await api.listTeams();
       const matches = await api.listMatches();
-      const stats: Record<number, { pts: number; gf: number; ga: number; gd: number }> = {};
+      const stats: Record<
+        number,
+        { pts: number; gf: number; ga: number; gd: number }
+      > = {};
       for (const t of teams) stats[t.id] = { pts: 0, gf: 0, ga: 0, gd: 0 };
       for (const m of matches as any[]) {
         const a = m.team_a_id as number;
         const b = m.team_b_id as number;
         const ga = Number(m.score_a) || 0;
         const gb = Number(m.score_b) || 0;
-        stats[a].gf += ga; stats[a].ga += gb; stats[a].gd = stats[a].gf - stats[a].ga;
-        stats[b].gf += gb; stats[b].ga += ga; stats[b].gd = stats[b].gf - stats[b].ga;
-        if (ga > gb) stats[a].pts += 3; else if (gb > ga) stats[b].pts += 3; else { stats[a].pts += 1; stats[b].pts += 1; }
+        stats[a].gf += ga;
+        stats[a].ga += gb;
+        stats[a].gd = stats[a].gf - stats[a].ga;
+        stats[b].gf += gb;
+        stats[b].ga += ga;
+        stats[b].gd = stats[b].gf - stats[b].ga;
+        if (ga > gb) stats[a].pts += 3;
+        else if (gb > ga) stats[b].pts += 3;
+        else {
+          stats[a].pts += 1;
+          stats[b].pts += 1;
+        }
       }
       const sorted = [...teams].sort((ta, tb) => {
-        const a = stats[ta.id]; const b = stats[tb.id];
+        const a = stats[ta.id];
+        const b = stats[tb.id];
         if (b.pts !== a.pts) return b.pts - a.pts;
         if (b.gd !== a.gd) return b.gd - a.gd;
         if (b.gf !== a.gf) return b.gf - a.gf;
@@ -1249,13 +1306,22 @@ export function Jogos() {
       const top4 = sorted.slice(0, 4).map((t) => t.id);
       if (top4.length < 4) throw new Error("Necessário pelo menos 4 times");
       const existing = (matches as any[]).filter((m) => m.stage === "semi");
-      const pairExists = (x: number, y: number) => existing.some((m) =>
-        (m.team_a_id === x && m.team_b_id === y) || (m.team_a_id === y && m.team_b_id === x)
-      );
+      const pairExists = (x: number, y: number) =>
+        existing.some(
+          (m) =>
+            (m.team_a_id === x && m.team_b_id === y) ||
+            (m.team_a_id === y && m.team_b_id === x),
+        );
       const [t1, t2, t3, t4] = top4;
       const creates: Promise<any>[] = [];
-      if (!pairExists(t1, t4)) creates.push(api.createMatch({ team_a_id: t1, team_b_id: t4, stage: "semi" }));
-      if (!pairExists(t2, t3)) creates.push(api.createMatch({ team_a_id: t2, team_b_id: t3, stage: "semi" }));
+      if (!pairExists(t1, t4))
+        creates.push(
+          api.createMatch({ team_a_id: t1, team_b_id: t4, stage: "semi" }),
+        );
+      if (!pairExists(t2, t3))
+        creates.push(
+          api.createMatch({ team_a_id: t2, team_b_id: t3, stage: "semi" }),
+        );
       await Promise.all(creates);
     },
     onSuccess: () => {
@@ -1267,7 +1333,10 @@ export function Jogos() {
       <div className="flex items-center justify-between pb-3 gap-2 flex-wrap">
         <h2 className="text-lg font-semibold">Jogos</h2>
         <div className="flex items-center gap-2">
-          <Button onClick={() => genSemis.mutate()} disabled={genSemis.isPending}>
+          <Button
+            onClick={() => genSemis.mutate()}
+            disabled={genSemis.isPending}
+          >
             {genSemis.isPending ? "Gerando..." : "Gerar semifinais"}
           </Button>
         </div>

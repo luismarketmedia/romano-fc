@@ -162,9 +162,13 @@ function migrate(db: SqlDatabase) {
 
   // Add stage column to matches if missing
   const mcols = db.exec("PRAGMA table_info('matches')");
-  const mcolNames = new Set<string>((mcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])));
+  const mcolNames = new Set<string>(
+    (mcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
+  );
   if (!mcolNames.has("stage")) {
-    db.run("ALTER TABLE matches ADD COLUMN stage TEXT DEFAULT 'classificatoria'");
+    db.run(
+      "ALTER TABLE matches ADD COLUMN stage TEXT DEFAULT 'classificatoria'",
+    );
   }
 
   // Rebuild match_events to support STAR type if old schema detected

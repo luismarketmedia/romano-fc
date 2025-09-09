@@ -5,7 +5,13 @@ import { api } from "@/lib/api";
 import type { MatchEvent } from "@shared/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,7 +148,10 @@ export default function MatchManage() {
 
   const currentElapsed = useMemo(() => {
     return timer.isRunning
-      ? Math.max(0, Math.min(halfDurMs, timer.baseElapsed + (nowMs - timer.startedAt)))
+      ? Math.max(
+          0,
+          Math.min(halfDurMs, timer.baseElapsed + (nowMs - timer.startedAt)),
+        )
       : Math.max(0, Math.min(halfDurMs, timer.baseElapsed));
   }, [timer.baseElapsed, timer.isRunning, timer.startedAt, nowMs]);
 
@@ -150,7 +159,12 @@ export default function MatchManage() {
   useEffect(() => {
     if (!timer.isRunning) return;
     if (currentElapsed >= halfDurMs) {
-      setTimer((t) => ({ half: (t.half === 1 ? 2 : 2) as 1 | 2, isRunning: false, baseElapsed: 0, startedAt: 0 }));
+      setTimer((t) => ({
+        half: (t.half === 1 ? 2 : 2) as 1 | 2,
+        isRunning: false,
+        baseElapsed: 0,
+        startedAt: 0,
+      }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentElapsed]);
@@ -183,7 +197,12 @@ export default function MatchManage() {
   };
 
   const endHalf = () => {
-    setTimer((t) => ({ half: (t.half === 1 ? 2 : 2) as 1 | 2, isRunning: false, baseElapsed: 0, startedAt: 0 }));
+    setTimer((t) => ({
+      half: (t.half === 1 ? 2 : 2) as 1 | 2,
+      isRunning: false,
+      baseElapsed: 0,
+      startedAt: 0,
+    }));
   };
 
   const setStage = useMutation({
@@ -228,7 +247,9 @@ export default function MatchManage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="classificatoria">Classificatório</SelectItem>
+                  <SelectItem value="classificatoria">
+                    Classificatório
+                  </SelectItem>
                   <SelectItem value="oitavas">Oitavas</SelectItem>
                   <SelectItem value="quartas">Quartas</SelectItem>
                   <SelectItem value="semi">Semi</SelectItem>
@@ -239,7 +260,11 @@ export default function MatchManage() {
             <Button variant="secondary" onClick={toggleRun}>
               {timer.isRunning ? "Pausar" : "Iniciar"}
             </Button>
-            <Button variant="outline" onClick={endHalf} disabled={timer.half === 2 && currentElapsed === 0}>
+            <Button
+              variant="outline"
+              onClick={endHalf}
+              disabled={timer.half === 2 && currentElapsed === 0}
+            >
               Encerrar tempo
             </Button>
           </div>
