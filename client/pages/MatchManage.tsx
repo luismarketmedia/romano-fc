@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -79,6 +79,106 @@ export default function MatchManage() {
     );
   }
 
+  // Match timer state (20 min per half)
+  const halfDurMs = 20 * 60 * 1000;
+  const storageKey = Number.isFinite(matchId)
+    ? `matchTimer:${matchId}`
+    : undefined;
+  const [timer, setTimer] = useState<{
+    half: 1 | 2;
+    isRunning: boolean;
+    baseElapsed: number; // accumulated ms in current half when not running
+    startedAt: number; // timestamp when started
+  }>({ half: 1, isRunning: false, baseElapsed: 0, startedAt: 0 });
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  // Load persisted timer
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.half === 1 || parsed.half === 2)) {
+          setTimer({
+            half: parsed.half,
+            isRunning: false,
+            baseElapsed: Number(parsed.baseElapsed) || 0,
+            startedAt: 0,
+          });
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  // Persist timer
+  useEffect(() => {
+    if (!storageKey) return;
+    const toSave = {
+      half: timer.half,
+      baseElapsed: timer.isRunning
+        ? timer.baseElapsed + (Date.now() - timer.startedAt)
+        : timer.baseElapsed,
+    };
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(toSave));
+    } catch {}
+  }, [timer, storageKey]);
+
+  // Ticker while running
+  useEffect(() => {
+    if (!timer.isRunning) return;
+    const id = setInterval(() => setNowMs(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [timer.isRunning]);
+
+  const currentElapsed = useMemo(() => {
+    return timer.isRunning
+      ? Math.max(0, Math.min(halfDurMs, timer.baseElapsed + (nowMs - timer.startedAt)))
+      : Math.max(0, Math.min(halfDurMs, timer.baseElapsed));
+  }, [timer.baseElapsed, timer.isRunning, timer.startedAt, nowMs]);
+
+  // Auto-end half at 20:00
+  useEffect(() => {
+    if (!timer.isRunning) return;
+    if (currentElapsed >= halfDurMs) {
+      setTimer((t) => ({ half: Math.min(2, (t.half + 1) as 1 | 2), isRunning: false, baseElapsed: 0, startedAt: 0 }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentElapsed]);
+
+  const mmss = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+    const ss = String(totalSec % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  };
+
+  const currentMinuteAbs = useMemo(() => {
+    const minInHalf = Math.floor(currentElapsed / 60000);
+    return Math.min(40, (timer.half - 1) * 20 + minInHalf);
+  }, [currentElapsed, timer.half]);
+
+  const toggleRun = () => {
+    setTimer((t) => {
+      if (t.isRunning) {
+        const now = Date.now();
+        return {
+          ...t,
+          isRunning: false,
+          baseElapsed: Math.min(halfDurMs, t.baseElapsed + (now - t.startedAt)),
+          startedAt: 0,
+        };
+      }
+      return { ...t, isRunning: true, startedAt: Date.now() };
+    });
+  };
+
+  const endHalf = () => {
+    setTimer((t) => ({ half: Math.min(2, (t.half + 1) as 1 | 2), isRunning: false, baseElapsed: 0, startedAt: 0 }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <div className="mx-auto max-w-6xl px-4 py-4">
@@ -95,7 +195,22 @@ export default function MatchManage() {
               {scoreA} - {scoreB}
             </div>
           </div>
-          <div className="w-[88px]" />
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <div className="text-xs text-muted-foreground">
+                {timer.half}º tempo • 20:00
+              </div>
+              <div className="text-lg font-semibold tabular-nums">
+                {mmss(currentElapsed)}
+              </div>
+            </div>
+            <Button variant="secondary" onClick={toggleRun}>
+              {timer.isRunning ? "Pausar" : "Iniciar"}
+            </Button>
+            <Button variant="outline" onClick={endHalf} disabled={timer.half === 2 && currentElapsed === 0}>
+              Encerrar tempo
+            </Button>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4">
@@ -107,6 +222,7 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
+            currentMinute={currentMinuteAbs}
             onSetNumber={(playerId, n) =>
               setNumber.mutate({ id: playerId, number: n })
             }
@@ -116,7 +232,7 @@ export default function MatchManage() {
                 team_id: q.data?.match.team_a_id,
                 player_id: playerId,
                 type,
-                minute: null,
+                minute: currentMinuteAbs,
               })
             }
           />
@@ -128,6 +244,7 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
+            currentMinute={currentMinuteAbs}
             onSetNumber={(playerId, n) =>
               setNumber.mutate({ id: playerId, number: n })
             }
@@ -137,7 +254,7 @@ export default function MatchManage() {
                 team_id: q.data?.match.team_b_id,
                 player_id: playerId,
                 type,
-                minute: null,
+                minute: currentMinuteAbs,
               })
             }
           />
@@ -166,6 +283,7 @@ function TeamColumn({
   currentStarId?: number;
   isAdding: boolean;
   isNumbering: boolean;
+  currentMinute?: number;
   onSetNumber: (playerId: number, n: number | null) => void;
   onDeleteEvent: (eventId: number) => Promise<any>;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
