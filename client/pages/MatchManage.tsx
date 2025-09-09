@@ -206,26 +206,30 @@ function TeamColumn({
               </span>
               <div className="flex items-center gap-2">
                 <StarBadge active={isStar} />
-                <BadgeCount label="⚽" count={g} onClick={g ? () => onDeleteEvent((gEvents[g - 1] as any).id) : undefined} />
-                <BadgeCount label="🟨" count={y} onClick={y ? () => onDeleteEvent((yEvents[y - 1] as any).id) : undefined} />
-                <BadgeCount label="🟥" count={r} onClick={r ? () => onDeleteEvent((rEvents[r - 1] as any).id) : undefined} />
+                <BadgeCount label="⚽" count={g} onClick={!isDeleting && g ? () => onDeleteEvent((gEvents[g - 1] as any).id) : undefined} />
+                <BadgeCount label="🟨" count={y} onClick={!isDeleting && y ? () => onDeleteEvent((yEvents[y - 1] as any).id) : undefined} />
+                <BadgeCount label="🟥" count={r} onClick={!isDeleting && r ? () => onDeleteEvent((rEvents[r - 1] as any).id) : undefined} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Ações">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" aria-label="Ações" disabled={isAdding}>
+                      {isAdding ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MoreHorizontal className="h-4 w-4" />
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEvent(p.id, "STAR")}>
+                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "STAR")}>
                       Destaque
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEvent(p.id, "GOAL")}>
+                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "GOAL")}>
                       Gol
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEvent(p.id, "YELLOW")}>
+                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "YELLOW")}>
                       Amarelo
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEvent(p.id, "RED")}>
+                    <DropdownMenuItem disabled={isAdding} onClick={() => onEvent(p.id, "RED")}>
                       Vermelho
                     </DropdownMenuItem>
                   </DropdownMenuContent>
