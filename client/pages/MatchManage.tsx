@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { MatchEvent } from "@shared/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,12 @@ export default function MatchManage() {
 
   const add = useMutation({
     mutationFn: (payload: any) => api.addEvent(matchId, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+  });
+
+  const setNumber = useMutation({
+    mutationFn: ({ id, number }: { id: number; number: number | null }) =>
+      api.updatePlayer(id, { number }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
   });
 
@@ -89,6 +96,7 @@ export default function MatchManage() {
             players={(q.data?.aPlayers ?? []) as any}
             events={evs}
             currentStarId={starPlayerId}
+            onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
             onEvent={(playerId, type) =>
               add.mutate({
                 team_id: q.data?.match.team_a_id,
@@ -104,6 +112,7 @@ export default function MatchManage() {
             players={(q.data?.bPlayers ?? []) as any}
             events={evs}
             currentStarId={starPlayerId}
+            onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
             onEvent={(playerId, type) =>
               add.mutate({
                 team_id: q.data?.match.team_b_id,
@@ -125,6 +134,7 @@ function TeamColumn({
   players,
   events,
   currentStarId,
+  onSetNumber,
   onEvent,
 }: {
   title: string;
@@ -132,6 +142,7 @@ function TeamColumn({
   players: { id: number; name: string; number?: number | null }[];
   events: MatchEvent[];
   currentStarId?: number;
+  onSetNumber: (playerId: number, n: number | null) => void;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
 }) {
   return (
@@ -150,9 +161,29 @@ function TeamColumn({
               className="flex items-center justify-between rounded border px-3 py-2"
             >
               <span className="font-medium flex items-center gap-2">
-                {p.number != null ? (
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-semibold">{p.number}</span>
-                ) : null}
+                <Input
+                  type="number"
+                  min={0}
+                  max={99}
+                  defaultValue={p.number ?? ""}
+                  placeholder="#"
+                  className="w-14 h-8 px-2"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const v = (e.target as HTMLInputElement).value;
+                      const n = v === "" ? null : Number(v);
+                      if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                      onSetNumber(p.id, n);
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    const n = v === "" ? null : Number(v);
+                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                    onSetNumber(p.id, n);
+                  }}
+                />
                 {p.name}
               </span>
               <div className="flex items-center gap-2">
@@ -178,24 +209,6 @@ function TeamColumn({
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEvent(p.id, "RED")}>
                       Vermelho
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const v = window.prompt("Número da camisa (0-99)", p.number != null ? String(p.number) : "");
-                        if (v == null) return;
-                        const n = Number(v);
-                        if (!Number.isFinite(n) || n < 0 || n > 99) return;
-                        fetch(`/api/players/${p.id}`, {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ number: n }),
-                        }).then(() => {
-                          // refetch match data
-                          location.reload();
-                        });
-                      }}
-                    >
-                      Definir número
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
