@@ -36,9 +36,10 @@ async function init(): Promise<SqlDatabase> {
   // their relative path (e.g. netlify/functions/node_modules/sql.js/dist/...).
   // We resolve from this file's directory to be robust in both CJS/ESM builds.
   const { fileURLToPath } = await import("url");
-  const dirname = typeof __dirname !== "undefined"
-    ? __dirname
-    : path.dirname(fileURLToPath(import.meta.url));
+  const dirname =
+    typeof __dirname !== "undefined"
+      ? __dirname
+      : path.dirname(fileURLToPath(import.meta.url));
 
   const wasmPath = IS_SERVERLESS
     ? path.join(dirname, "node_modules/sql.js/dist/sql-wasm.wasm")
