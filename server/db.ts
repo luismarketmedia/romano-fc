@@ -102,12 +102,13 @@ export async function col<T = any>(name: string): Promise<Collection<T>> {
 // Simple numeric id generator similar to SQL autoincrement
 export async function getNextId(key: string): Promise<number> {
   const db = await getDb();
-  const r = await db.collection("counters").findOneAndUpdate(
+  const counters = db.collection<{ _id: string; seq: number }>("counters");
+  const r = await counters.findOneAndUpdate(
     { _id: key },
     { $inc: { seq: 1 } },
     { upsert: true, returnDocument: "after" },
   );
-  const seq = (r.value as any)?.seq ?? 1;
+  const seq = r.value?.seq ?? 1;
   return Number(seq);
 }
 
