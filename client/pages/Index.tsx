@@ -766,7 +766,10 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
           {role("reserva2", "Reserva 2")}
         </div>
         <DialogFooter className="pt-2">
-          <Button onClick={() => mutate.mutate(form)}>Salvar escalação</Button>
+          <Button disabled={mutate.isPending} onClick={() => mutate.mutate(form)}>
+            {mutate.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar escalação
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
