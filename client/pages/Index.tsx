@@ -258,8 +258,8 @@ export function PessoasTable() {
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="text-lg font-semibold">Pessoas</div>
       <div className="flex items-center justify-between pb-3 gap-3 flex-wrap">
-        <h2 className="text-lg font-semibold">Pessoas</h2>
         <div className="flex items-end gap-2 flex-1 min-w-[280px]">
           <div className="flex-1">
             <label className="mb-1 block text-sm">Buscar por nome</label>
