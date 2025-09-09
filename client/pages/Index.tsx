@@ -312,8 +312,19 @@ export function PessoasTable() {
               <TableCell>{p.team_name ?? "—"}</TableCell>
               <TableCell className="text-right space-x-1">
                 {!(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) && (
-                  <Button variant="ghost" size="icon" aria-label="Marcar como pago" title="Marcar como pago" onClick={() => togglePaid.mutate({ id: p.id, paid: true })}>
-                    <CircleDollarSign className="h-4 w-4" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Marcar como pago"
+                    title="Marcar como pago"
+                    disabled={togglePaid.isPending}
+                    onClick={() => togglePaid.mutate({ id: p.id, paid: true })}
+                  >
+                    {togglePaid.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CircleDollarSign className="h-4 w-4" />
+                    )}
                   </Button>
                 )}
                 <PlayerDialog player={p} icon />
