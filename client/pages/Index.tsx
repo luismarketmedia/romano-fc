@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pencil, Trash2, Users, CircleDollarSign } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Select,
   SelectContent,
