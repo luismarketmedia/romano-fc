@@ -201,6 +201,7 @@ function TeamColumn({
                   defaultValue={p.number ?? ""}
                   placeholder="#"
                   className="w-14 h-8 px-2"
+                  disabled={isNumbering}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const v = (e.target as HTMLInputElement).value;
