@@ -30,6 +30,7 @@ export interface Player {
   position: Position;
   paid: boolean | number; // server returns 0/1 sometimes
   team_id: number | null;
+  number?: number | null;
   created_at?: string;
   team_name?: string | null;
 }

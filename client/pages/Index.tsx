@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Player, Team, Position, DrawResponse } from "@shared/api";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Pencil, Trash2, Users, CircleDollarSign } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -46,7 +49,7 @@ export default function Index() {
   );
 }
 
-function Header() {
+export function Header() {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -65,10 +68,26 @@ function Header() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <DevSeedButton />
-          <DevClearButton />
-          <ThemeBadge />
+        <div className="flex items-center gap-4">
+          <nav className="hidden sm:flex items-center gap-4 text-sm">
+            <Link to="/pessoas" className="hover:underline">
+              Pessoas
+            </Link>
+            <Link to="/times" className="hover:underline">
+              Times
+            </Link>
+            <Link to="/sorteio" className="hover:underline">
+              Sorteio
+            </Link>
+            <Link to="/jogos" className="hover:underline">
+              Jogos
+            </Link>
+          </nav>
+          <div className="flex items-center gap-2">
+            <DevSeedButton />
+            <DevClearButton />
+            <ThemeBadge />
+          </div>
         </div>
       </div>
     </header>
@@ -184,26 +203,141 @@ function StatCard({ title, value }: { title: string; value: number }) {
   );
 }
 
-function PessoasTable() {
+export function PessoasTable() {
   const qc = useQueryClient();
   const playersQ = useQuery({
     queryKey: ["players"],
     queryFn: api.listPlayers,
   });
+  const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const del = useMutation({
     mutationFn: (id: number) => api.deletePlayer(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "lineup",
+      });
+    },
   });
+  const togglePaid = useMutation({
+    mutationFn: ({ id, paid }: { id: number; paid: boolean }) =>
+      api.updatePlayer(id, { paid }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "lineup",
+      });
+    },
+  });
+
+  const [search, setSearch] = useState("");
+  const [pos, setPos] = useState<string>("all");
+  const [team, setTeam] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const players = playersQ.data ?? [];
+  const filtered = players.filter((p) => {
+    const byName = p.name.toLowerCase().includes(search.toLowerCase());
+    const byPos = pos === "all" || p.position === (pos as Position);
+    const byTeam = team === "all" || String(p.team_id ?? "") === team;
+    return byName && byPos && byTeam;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const paged = filtered.slice(start, start + pageSize);
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between pb-3 gap-3 flex-wrap">
         <h2 className="text-lg font-semibold">Pessoas</h2>
-        <PlayerDialog />
+        <div className="flex items-end gap-2 flex-1 min-w-[280px]">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm">Buscar por nome</label>
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Digite o nome"
+            />
+          </div>
+          <div className="w-40">
+            <label className="mb-1 block text-sm">Posição</label>
+            <Select
+              value={pos}
+              onValueChange={(v) => {
+                setPos(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {POSICOES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-48">
+            <label className="mb-1 block text-sm">Time</label>
+            <Select
+              value={team}
+              onValueChange={(v) => {
+                setTeam(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {(teamsQ.data ?? []).map((t) => (
+                  <SelectItem key={t.id} value={String(t.id)}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-28">
+            <label className="mb-1 block text-sm">Por página</label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 20, 50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <PlayerDialog />
+        </div>
       </div>
+
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>#</TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>Posição</TableHead>
             <TableHead>Pago</TableHead>
@@ -212,8 +346,11 @@ function PessoasTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(playersQ.data ?? []).map((p) => (
+          {paged.map((p) => (
             <TableRow key={p.id}>
+              <TableCell className="w-12">
+                {p.number != null ? p.number : "—"}
+              </TableCell>
               <TableCell className="font-medium">{p.name}</TableCell>
               <TableCell>{p.position}</TableCell>
               <TableCell>
@@ -228,25 +365,77 @@ function PessoasTable() {
                 )}
               </TableCell>
               <TableCell>{p.team_name ?? "—"}</TableCell>
-              <TableCell className="text-right">
-                <PlayerDialog player={p} />
+              <TableCell className="text-right space-x-1">
+                {!(typeof p.paid === "number" ? p.paid === 1 : !!p.paid) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Marcar como pago"
+                    title="Marcar como pago"
+                    disabled={togglePaid.isPending}
+                    onClick={() => togglePaid.mutate({ id: p.id, paid: true })}
+                  >
+                    {togglePaid.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CircleDollarSign className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                <PlayerDialog player={p} icon />
                 <Button
-                  variant="destructive"
-                  className="ml-2"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-0.5"
+                  aria-label="Remover jogador"
+                  title="Remover jogador"
+                  disabled={del.isPending}
                   onClick={() => del.mutate(p.id)}
                 >
-                  Remover
+                  {del.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex items-center justify-between pt-3 text-sm text-muted-foreground">
+        <div>
+          Mostrando {filtered.length ? start + 1 : 0}–
+          {Math.min(start + pageSize, filtered.length)} de {filtered.length}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span>
+            Página {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function PlayerDialog({ player }: { player?: Player }) {
+function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
   const qc = useQueryClient();
   const teams = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const [open, setOpen] = useState(false);
@@ -259,6 +448,10 @@ function PlayerDialog({ player }: { player?: Player }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["players"] });
       qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "lineup",
+      });
       setOpen(false);
     },
   });
@@ -271,12 +464,26 @@ function PlayerDialog({ player }: { player?: Player }) {
   const [teamId, setTeamId] = useState<string>(
     player?.team_id ? String(player.team_id) : "none",
   );
+  const [number, setNumber] = useState<string>(
+    player?.number != null ? String(player.number) : "",
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {player ? (
-          <Button variant="outline">Editar</Button>
+          icon ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Editar jogador"
+              title="Editar jogador"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline">Editar</Button>
+          )
         ) : (
           <Button>Novo Jogador</Button>
         )}
@@ -292,7 +499,7 @@ function PlayerDialog({ player }: { player?: Player }) {
             <label className="mb-1 block text-sm">Nome</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
               <label className="mb-1 block text-sm">Posição</label>
               <Select
@@ -340,19 +547,35 @@ function PlayerDialog({ player }: { player?: Player }) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="mb-1 block text-sm">Número da camisa</label>
+              <Input
+                type="number"
+                min={0}
+                max={99}
+                value={number}
+                onChange={(e) =>
+                  setNumber(e.target.value.replace(/[^0-9]/g, ""))
+                }
+                placeholder="ex: 10"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter className="pt-2">
           <Button
+            disabled={mut.isPending}
             onClick={() =>
               mut.mutate({
                 name,
                 position,
                 paid,
                 team_id: teamId === "none" ? null : Number(teamId),
+                number: number === "" ? null : Number(number),
               })
             }
           >
+            {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
         </DialogFooter>
@@ -361,7 +584,7 @@ function PlayerDialog({ player }: { player?: Player }) {
   );
 }
 
-function TimesTable() {
+export function TimesTable() {
   const qc = useQueryClient();
   const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const del = useMutation({
@@ -369,12 +592,59 @@ function TimesTable() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teams"] }),
   });
 
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const teams = teamsQ.data ?? [];
+  const filtered = teams.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase()),
+  );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const paged = filtered.slice(start, start + pageSize);
+
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between pb-3 gap-3 flex-wrap">
         <h2 className="text-lg font-semibold">Times</h2>
-        <TeamDialog />
+        <div className="flex items-end gap-2 flex-1 min-w-[280px]">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm">Buscar por nome</label>
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Digite o nome do time"
+            />
+          </div>
+          <div className="w-28">
+            <label className="mb-1 block text-sm">Por página</label>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[5, 10, 20, 50].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <TeamDialog />
+        </div>
       </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -385,7 +655,7 @@ function TimesTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(teamsQ.data ?? []).map((t) => (
+          {paged.map((t) => (
             <TableRow key={t.id}>
               <TableCell className="font-medium">{t.name}</TableCell>
               <TableCell>
@@ -402,22 +672,61 @@ function TimesTable() {
                 )}
               </TableCell>
               <TableCell>{t.playerCount ?? "—"}</TableCell>
-              <TableCell className="text-right space-x-2">
-                <TeamDialog team={t} />
-                <EscalacaoDialog team={t} />
-                <Button variant="destructive" onClick={() => del.mutate(t.id)}>
-                  Remover
+              <TableCell className="text-right space-x-1">
+                <TeamDialog team={t} icon />
+                <EscalacaoDialog team={t} icon />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remover time"
+                  title="Remover time"
+                  disabled={del.isPending}
+                  onClick={() => del.mutate(t.id)}
+                >
+                  {del.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex items-center justify-between pt-3 text-sm text-muted-foreground">
+        <div>
+          Mostrando {filtered.length ? start + 1 : 0}–
+          {Math.min(start + pageSize, filtered.length)} de {filtered.length}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span>
+            Página {page} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
 
-function TeamDialog({ team }: { team?: Team }) {
+function TeamDialog({ team, icon }: { team?: Team; icon?: boolean }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(team?.name ?? "");
@@ -445,7 +754,18 @@ function TeamDialog({ team }: { team?: Team }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {team ? (
-          <Button variant="outline">Editar</Button>
+          icon ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Editar time"
+              title="Editar time"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button variant="outline">Editar</Button>
+          )
         ) : (
           <Button>Novo Time</Button>
         )}
@@ -514,7 +834,7 @@ function TeamDialog({ team }: { team?: Team }) {
   );
 }
 
-function EscalacaoDialog({ team }: { team: Team }) {
+function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
   const [open, setOpen] = useState(false);
   const { data } = useQuery({
     queryKey: ["lineup", team.id],
@@ -522,8 +842,13 @@ function EscalacaoDialog({ team }: { team: Team }) {
     enabled: open,
   });
   const players = (data?.players ?? []) as { id: number; name: string }[];
-  const initial = data?.lineup ?? { team_id: team.id };
-  const [form, setForm] = useState<any>(initial);
+  const [form, setForm] = useState<any>({ team_id: team.id });
+
+  useEffect(() => {
+    if (open) {
+      setForm(data?.lineup ?? { team_id: team.id });
+    }
+  }, [open, data, team.id]);
 
   const mutate = useMutation({
     mutationFn: (payload: any) => api.saveLineup(team.id, payload),
@@ -555,15 +880,20 @@ function EscalacaoDialog({ team }: { team: Team }) {
   );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v);
-        if (v) setForm(initial);
-      }}
-    >
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary">Escalação</Button>
+        {icon ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Escalação"
+            title="Escalação"
+          >
+            <Users className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="secondary">Escalação</Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -580,26 +910,44 @@ function EscalacaoDialog({ team }: { team: Team }) {
           {role("reserva2", "Reserva 2")}
         </div>
         <DialogFooter className="pt-2">
-          <Button onClick={() => mutate.mutate(form)}>Salvar escalação</Button>
+          <Button
+            disabled={mutate.isPending}
+            onClick={() => mutate.mutate(form)}
+          >
+            {mutate.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Salvar escalação
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Sorteio() {
+export function Sorteio() {
   const [teamCount, setTeamCount] = useState<number>(2);
   const [paidOnly, setPaidOnly] = useState<boolean>(true);
   const [apply, setApply] = useState<boolean>(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
 
-  const run = async () => {
-    const r = await api.drawTeams({ teamCount, paidOnly, apply });
-    setResult(r);
+  const drawMut = useMutation({
+    mutationFn: (payload: {
+      teamCount: number;
+      paidOnly?: boolean;
+      apply?: boolean;
+    }) => api.drawTeams(payload),
+    onSuccess: (r) => setResult(r),
+  });
+  const genMut = useMutation({
+    mutationFn: (ids: number[]) => api.generateMatches(ids),
+  });
+
+  const run = () => {
+    drawMut.mutate({ teamCount, paidOnly, apply });
   };
 
   const gerarJogos = async () => {
-    // Pair teams in order using DB team ids by name
     const teams = await api.listTeams();
     const ids: number[] = [];
     (result?.teams ?? []).forEach((t) => {
@@ -607,7 +955,7 @@ function Sorteio() {
       if (match) ids.push(match.id);
     });
     if (ids.length < 2) return;
-    await api.generateMatches(ids);
+    genMut.mutate(ids);
   };
 
   return (
@@ -644,16 +992,22 @@ function Sorteio() {
           </label>
         </div>
         <div className="flex items-end">
-          <Button className="w-full" onClick={run}>
+          <Button className="w-full" disabled={drawMut.isPending} onClick={run}>
+            {drawMut.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Sortear
           </Button>
         </div>
         <div className="flex items-end">
           <Button
             className="w-full"
-            disabled={!result || !apply}
+            disabled={!result || !apply || genMut.isPending}
             onClick={gerarJogos}
           >
+            {genMut.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Gerar jogos
           </Button>
         </div>
@@ -682,7 +1036,7 @@ function Sorteio() {
   );
 }
 
-function Jogos() {
+export function Jogos() {
   const qc = useQueryClient();
   const matchesQ = useQuery({
     queryKey: ["matches"],
@@ -715,7 +1069,9 @@ function Jogos() {
                 {m.score_a} - {m.score_b}
               </TableCell>
               <TableCell className="text-right">
-                <MatchDialog matchId={m.id} />
+                <a href={`/jogos/${m.id}`}>
+                  <Button variant="outline">Gerenciar</Button>
+                </a>
               </TableCell>
             </TableRow>
           ))}

@@ -27,11 +27,11 @@ export const getMatch: RequestHandler = async (req, res) => {
   );
   if (!match) return res.status(404).json({ error: "Partida não encontrada" });
   const aPlayers = await all(
-    `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
+    `SELECT id, name, number FROM players WHERE team_id = ? ORDER BY name`,
     [match.team_a_id],
   );
   const bPlayers = await all(
-    `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
+    `SELECT id, name, number FROM players WHERE team_id = ? ORDER BY name`,
     [match.team_b_id],
   );
   const events = await all(
@@ -70,6 +70,22 @@ export const addEvent: RequestHandler = async (req, res) => {
   const { team_id, player_id, type, minute } = req.body ?? {};
   if (!matchId || !team_id || !player_id || !type)
     return res.status(400).json({ error: "Dados do evento incompletos" });
+
+  if (type === "STAR") {
+    const existing: any[] = await all(
+      `SELECT id, player_id FROM match_events WHERE match_id = ? AND type = 'STAR'`,
+      [matchId],
+    );
+    if (existing.length) {
+      const hasSame = existing.some((e) => e.player_id === player_id);
+      await run(
+        `DELETE FROM match_events WHERE match_id = ? AND type = 'STAR'`,
+        [matchId],
+      );
+      if (hasSame) return res.json({ ok: true, removed: true });
+    }
+  }
+
   const id = await insert(
     `INSERT INTO match_events (match_id, team_id, player_id, type, minute) VALUES (?, ?, ?, ?, ?)`,
     [matchId, team_id, player_id, type, minute ?? null],
