@@ -121,6 +121,9 @@ export default function MatchManage() {
             players={(q.data?.bPlayers ?? []) as any}
             events={evs}
             currentStarId={starPlayerId}
+            isAdding={add.isPending}
+            isDeleting={del.isPending}
+            isNumbering={setNumber.isPending}
             onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
             onDeleteEvent={(eventId) => del.mutate(eventId)}
             onEvent={(playerId, type) =>
