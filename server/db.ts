@@ -22,7 +22,9 @@ export interface Player {
   created_at: string;
 }
 
-const IS_SERVERLESS = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const IS_SERVERLESS = Boolean(
+  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
+);
 const DB_PATH = IS_SERVERLESS
   ? path.join(os.tmpdir(), "data.sqlite")
   : path.join(process.cwd(), "data.sqlite");
