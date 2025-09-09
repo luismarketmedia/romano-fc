@@ -461,6 +461,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
         </div>
         <DialogFooter className="pt-2">
           <Button
+            disabled={mut.isPending}
             onClick={() =>
               mut.mutate({
                 name,
@@ -471,6 +472,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
               })
             }
           >
+            {mut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Salvar
           </Button>
         </DialogFooter>
