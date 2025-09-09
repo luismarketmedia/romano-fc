@@ -175,7 +175,19 @@ function TeamColumn({
           const g = gEvents.length;
           const y = yEvents.length;
           const r = rEvents.length;
+          const lastGoalId = (gEvents[g - 1] as any)?.id as number | undefined;
+          const lastYellowId = (yEvents[y - 1] as any)?.id as number | undefined;
+          const lastRedId = (rEvents[r - 1] as any)?.id as number | undefined;
           const isStar = currentStarId === p.id;
+          const handleUndo = async (id?: number) => {
+            if (!id) return;
+            setDeletingId(id);
+            try {
+              await onDeleteEvent(id);
+            } finally {
+              setDeletingId((cur) => (cur === id ? null : cur));
+            }
+          };
           return (
             <li
               key={p.id}
