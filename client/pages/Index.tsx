@@ -80,10 +80,6 @@ export function Header() {
               Jogos
             </Link>
           </nav>
-          <div className="flex items-center gap-2">
-            <DevSeedButton />
-            <DevClearButton />
-          </div>
         </div>
       </div>
     </header>
