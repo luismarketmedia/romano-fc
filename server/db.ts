@@ -1,6 +1,7 @@
 import initSqlJs, { Database as SqlDatabase } from "sql.js";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
 export type Position = "GOL" | "DEF" | "ALAD" | "ALAE" | "MEI" | "ATA";
 export interface Team {
@@ -21,12 +22,20 @@ export interface Player {
   created_at: string;
 }
 
-const DB_PATH = path.join(process.cwd(), "data.sqlite");
+const IS_SERVERLESS = Boolean(
+  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
+);
+const DB_PATH = IS_SERVERLESS
+  ? path.join(os.tmpdir(), "data.sqlite")
+  : path.join(process.cwd(), "data.sqlite");
 let dbPromise: Promise<SqlDatabase> | null = null;
 
 async function init(): Promise<SqlDatabase> {
+  const wasmPath = IS_SERVERLESS
+    ? "sql-wasm.wasm"
+    : `node_modules/sql.js/dist/sql-wasm.wasm`;
   const SQL = await initSqlJs({
-    locateFile: (f) => `node_modules/sql.js/dist/${f}`,
+    locateFile: () => wasmPath,
   });
   let db: SqlDatabase;
   if (fs.existsSync(DB_PATH)) {
