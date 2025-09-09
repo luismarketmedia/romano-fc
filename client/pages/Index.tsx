@@ -191,11 +191,17 @@ function PessoasTable() {
   const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const del = useMutation({
     mutationFn: (id: number) => api.deletePlayer(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "lineup" });
+    },
   });
   const togglePaid = useMutation({
     mutationFn: ({ id, paid }: { id: number; paid: boolean }) => api.updatePlayer(id, { paid }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "lineup" });
+    },
   });
 
   const [search, setSearch] = useState("");
@@ -337,6 +343,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["players"] });
       qc.invalidateQueries({ queryKey: ["teams"] });
+      qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "lineup" });
       setOpen(false);
     },
   });
