@@ -146,7 +146,6 @@ function TeamColumn({
   events,
   currentStarId,
   isAdding,
-  isDeleting,
   isNumbering,
   onSetNumber,
   onDeleteEvent,
