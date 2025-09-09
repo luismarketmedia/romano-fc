@@ -212,9 +212,9 @@ function TeamColumn({
               </span>
               <div className="flex items-center gap-2">
                 <StarBadge active={isStar} />
-                <BadgeCount label="⚽" count={g} onClick={!isDeleting && g ? () => onDeleteEvent((gEvents[g - 1] as any).id) : undefined} />
-                <BadgeCount label="🟨" count={y} onClick={!isDeleting && y ? () => onDeleteEvent((yEvents[y - 1] as any).id) : undefined} />
-                <BadgeCount label="🟥" count={r} onClick={!isDeleting && r ? () => onDeleteEvent((rEvents[r - 1] as any).id) : undefined} />
+                <BadgeCount label="⚽" count={g} loading={isDeleting} onClick={!isDeleting && g ? () => onDeleteEvent((gEvents[g - 1] as any).id) : undefined} />
+                <BadgeCount label="🟨" count={y} loading={isDeleting} onClick={!isDeleting && y ? () => onDeleteEvent((yEvents[y - 1] as any).id) : undefined} />
+                <BadgeCount label="🟥" count={r} loading={isDeleting} onClick={!isDeleting && r ? () => onDeleteEvent((rEvents[r - 1] as any).id) : undefined} />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" aria-label="Ações" disabled={isAdding}>
@@ -249,15 +249,21 @@ function TeamColumn({
   );
 }
 
-function BadgeCount({ label, count, onClick }: { label: string; count: number; onClick?: () => void }) {
+function BadgeCount({ label, count, loading, onClick }: { label: string; count: number; loading?: boolean; onClick?: () => void }) {
   if (!count) return <span className="text-xs text-muted-foreground">{label}</span>;
   const Cmp: any = onClick ? "button" : "span";
   return (
     <Cmp
-      className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs hover:bg-accent hover:text-accent-foreground"
+      className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
       onClick={onClick}
+      disabled={!!loading}
     >
-      {label} <span className="ml-1 font-semibold">{count}</span>
+      {loading ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <>{label}</>
+      )}
+      <span className="ml-1 font-semibold">{count}</span>
     </Cmp>
   );
 }
