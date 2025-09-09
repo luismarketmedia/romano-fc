@@ -1227,10 +1227,54 @@ export function Jogos() {
     queryKey: ["matches"],
     queryFn: api.listMatches,
   });
+
+  const genSemis = useMutation({
+    mutationFn: async () => {
+      const teams = await api.listTeams();
+      const matches = await api.listMatches();
+      const stats: Record<number, { pts: number; gf: number; ga: number; gd: number }> = {};
+      for (const t of teams) stats[t.id] = { pts: 0, gf: 0, ga: 0, gd: 0 };
+      for (const m of matches as any[]) {
+        const a = m.team_a_id as number;
+        const b = m.team_b_id as number;
+        const ga = Number(m.score_a) || 0;
+        const gb = Number(m.score_b) || 0;
+        stats[a].gf += ga; stats[a].ga += gb; stats[a].gd = stats[a].gf - stats[a].ga;
+        stats[b].gf += gb; stats[b].ga += ga; stats[b].gd = stats[b].gf - stats[b].ga;
+        if (ga > gb) stats[a].pts += 3; else if (gb > ga) stats[b].pts += 3; else { stats[a].pts += 1; stats[b].pts += 1; }
+      }
+      const sorted = [...teams].sort((ta, tb) => {
+        const a = stats[ta.id]; const b = stats[tb.id];
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return ta.name.localeCompare(tb.name);
+      });
+      const top4 = sorted.slice(0, 4).map((t) => t.id);
+      if (top4.length < 4) throw new Error("Necessário pelo menos 4 times");
+      const existing = (matches as any[]).filter((m) => m.stage === "semi");
+      const pairExists = (x: number, y: number) => existing.some((m) =>
+        (m.team_a_id === x && m.team_b_id === y) || (m.team_a_id === y && m.team_b_id === x)
+      );
+      const [t1, t2, t3, t4] = top4;
+      const creates: Promise<any>[] = [];
+      if (!pairExists(t1, t4)) creates.push(api.createMatch({ team_a_id: t1, team_b_id: t4, stage: "semi" }));
+      if (!pairExists(t2, t3)) creates.push(api.createMatch({ team_a_id: t2, team_b_id: t3, stage: "semi" }));
+      await Promise.all(creates);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex items-center justify-between pb-3">
+      <div className="flex items-center justify-between pb-3 gap-2 flex-wrap">
         <h2 className="text-lg font-semibold">Jogos</h2>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => genSemis.mutate()} disabled={genSemis.isPending}>
+            {genSemis.isPending ? "Gerando..." : "Gerar semifinais"}
+          </Button>
+        </div>
       </div>
       <Table>
         <TableHeader>
