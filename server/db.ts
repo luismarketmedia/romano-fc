@@ -31,9 +31,20 @@ const DB_PATH = IS_SERVERLESS
 let dbPromise: Promise<SqlDatabase> | null = null;
 
 async function init(): Promise<SqlDatabase> {
+  // Resolve absolute path to the sql.js WASM file. In Netlify functions, assets
+  // from `included_files` are copied under the function's directory, preserving
+  // their relative path (e.g. netlify/functions/node_modules/sql.js/dist/...).
+  // We resolve from this file's directory to be robust in both CJS/ESM builds.
+  const { fileURLToPath } = await import("url");
+  const dirname =
+    typeof __dirname !== "undefined"
+      ? __dirname
+      : path.dirname(fileURLToPath(import.meta.url));
+
   const wasmPath = IS_SERVERLESS
-    ? "sql-wasm.wasm"
-    : `node_modules/sql.js/dist/sql-wasm.wasm`;
+    ? path.join(dirname, "node_modules/sql.js/dist/sql-wasm.wasm")
+    : path.join(process.cwd(), "node_modules/sql.js/dist/sql-wasm.wasm");
+
   const SQL = await initSqlJs({
     locateFile: () => wasmPath,
   });
