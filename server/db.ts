@@ -136,17 +136,25 @@ function migrate(db: SqlDatabase) {
       position TEXT NOT NULL CHECK (position in ('GOL','DEF','ALAD','ALAE','MEI','ATA')),
       paid INTEGER NOT NULL DEFAULT 0,
       team_id INTEGER NULL,
+      number INTEGER NULL,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE SET NULL
     )`);
     db.run(
-      "INSERT INTO players (id,name,position,paid,team_id,created_at) SELECT id,name,position,paid,team_id,created_at FROM players_old",
+      "INSERT INTO players (id,name,position,paid,team_id,number,created_at) SELECT id,name,position,paid,team_id,NULL as number,created_at FROM players_old",
     );
     db.run("DROP TABLE players_old");
     db.run("CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id)");
     db.run(
       "CREATE INDEX IF NOT EXISTS idx_players_position ON players(position)",
     );
+  }
+
+  // Add number column if missing (for existing correct schema)
+  const pcols = db.exec("PRAGMA table_info('players')");
+  const pcolNames = new Set<string>((pcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])));
+  if (!pcolNames.has("number")) {
+    db.run("ALTER TABLE players ADD COLUMN number INTEGER NULL");
   }
 
   // Rebuild match_events to support STAR type if old schema detected
