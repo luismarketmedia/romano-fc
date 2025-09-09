@@ -19,9 +19,14 @@ export const getLineup: RequestHandler = async (req, res) => {
   const team = await teams.findOne({ id: teamId });
   if (!team) return res.status(404).json({ error: "Time não encontrado" });
   const lineups = await col<any>("lineups");
-  let lineup: any = await lineups.findOne({ team_id: teamId }, { projection: { _id: 0 } });
+  let lineup: any = await lineups.findOne(
+    { team_id: teamId },
+    { projection: { _id: 0 } },
+  );
   if (!lineup) lineup = { team_id: teamId, ...emptyLineup };
-  const players = await (await col("players"))
+  const players = await (
+    await col("players")
+  )
     .find({ team_id: teamId }, { projection: { _id: 0, id: 1, name: 1 } })
     .sort({ name: 1 })
     .toArray();
@@ -88,6 +93,9 @@ export const saveLineup: RequestHandler = async (req, res) => {
     },
     { upsert: true },
   );
-  const lineup = await lineups.findOne({ team_id: teamId }, { projection: { _id: 0 } });
+  const lineup = await lineups.findOne(
+    { team_id: teamId },
+    { projection: { _id: 0 } },
+  );
   res.json({ lineup });
 };

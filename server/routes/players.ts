@@ -2,7 +2,9 @@ import { RequestHandler } from "express";
 import { col, getNextId, nowIso } from "../db";
 
 export const listPlayers: RequestHandler = async (_req, res) => {
-  const players = await (await col<any>("players"))
+  const players = await (
+    await col<any>("players")
+  )
     .aggregate([
       {
         $lookup: {
@@ -12,7 +14,11 @@ export const listPlayers: RequestHandler = async (_req, res) => {
           as: "team",
         },
       },
-      { $addFields: { team_name: { $ifNull: [{ $first: "$team.name" }, null] } } },
+      {
+        $addFields: {
+          team_name: { $ifNull: [{ $first: "$team.name" }, null] },
+        },
+      },
       { $project: { team: 0, _id: 0 } },
       { $sort: { created_at: -1 } },
     ])

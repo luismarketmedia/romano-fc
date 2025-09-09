@@ -2,13 +2,21 @@ import { RequestHandler } from "express";
 import { col, getNextId, nowIso } from "../db";
 
 export const listMatches: RequestHandler = async (_req, res) => {
-  const matches = await (await col<any>("matches"))
+  const matches = await (
+    await col<any>("matches")
+  )
     .find({}, { projection: { _id: 0 } })
     .sort({ created_at: -1 })
     .toArray();
-  const teams = await (await col<any>("teams")).find({}, { projection: { _id: 0, id: 1, name: 1 } }).toArray();
-  const nameById = new Map<number, string>(teams.map((t: any) => [t.id, t.name]));
-  const events = await (await col<any>("match_events")).find({}, { projection: { _id: 0, match_id: 1, team_id: 1, type: 1 } }).toArray();
+  const teams = await (await col<any>("teams"))
+    .find({}, { projection: { _id: 0, id: 1, name: 1 } })
+    .toArray();
+  const nameById = new Map<number, string>(
+    teams.map((t: any) => [t.id, t.name]),
+  );
+  const events = await (await col<any>("match_events"))
+    .find({}, { projection: { _id: 0, match_id: 1, team_id: 1, type: 1 } })
+    .toArray();
   const scoreA = new Map<number, number>();
   const scoreB = new Map<number, number>();
   for (const m of matches) {
@@ -19,8 +27,10 @@ export const listMatches: RequestHandler = async (_req, res) => {
     if (e.type !== "GOAL") continue;
     const m = matches.find((mm) => mm.id === e.match_id);
     if (!m) continue;
-    if (e.team_id === m.team_a_id) scoreA.set(m.id, (scoreA.get(m.id) || 0) + 1);
-    if (e.team_id === m.team_b_id) scoreB.set(m.id, (scoreB.get(m.id) || 0) + 1);
+    if (e.team_id === m.team_a_id)
+      scoreA.set(m.id, (scoreA.get(m.id) || 0) + 1);
+    if (e.team_id === m.team_b_id)
+      scoreB.set(m.id, (scoreB.get(m.id) || 0) + 1);
   }
   const rows = matches.map((m) => ({
     ...m,
@@ -42,15 +52,27 @@ export const getMatch: RequestHandler = async (req, res) => {
   const ta = await teams.findOne({ id: m.team_a_id });
   const tb = await teams.findOne({ id: m.team_b_id });
   const match = { ...m, team_a_name: ta?.name, team_b_name: tb?.name };
-  const aPlayers = await (await col("players"))
-    .find({ team_id: m.team_a_id }, { projection: { _id: 0, id: 1, name: 1, number: 1 } })
+  const aPlayers = await (
+    await col("players")
+  )
+    .find(
+      { team_id: m.team_a_id },
+      { projection: { _id: 0, id: 1, name: 1, number: 1 } },
+    )
     .sort({ name: 1 })
     .toArray();
-  const bPlayers = await (await col("players"))
-    .find({ team_id: m.team_b_id }, { projection: { _id: 0, id: 1, name: 1, number: 1 } })
+  const bPlayers = await (
+    await col("players")
+  )
+    .find(
+      { team_id: m.team_b_id },
+      { projection: { _id: 0, id: 1, name: 1, number: 1 } },
+    )
     .sort({ name: 1 })
     .toArray();
-  const events = await (await col<any>("match_events"))
+  const events = await (
+    await col<any>("match_events")
+  )
     .aggregate([
       { $match: { match_id: id } },
       {
@@ -61,7 +83,11 @@ export const getMatch: RequestHandler = async (req, res) => {
           as: "player",
         },
       },
-      { $addFields: { player_name: { $ifNull: [{ $first: "$player.name" }, null] } } },
+      {
+        $addFields: {
+          player_name: { $ifNull: [{ $first: "$player.name" }, null] },
+        },
+      },
       { $project: { _id: 0, player: 0 } },
       { $sort: { created_at: 1 } },
     ])
@@ -109,7 +135,9 @@ export const addEvent: RequestHandler = async (req, res) => {
 
   const eventsCol = await col<any>("match_events");
   if (type === "STAR") {
-    const existing = await eventsCol.find({ match_id: matchId, type: "STAR" }).toArray();
+    const existing = await eventsCol
+      .find({ match_id: matchId, type: "STAR" })
+      .toArray();
     if (existing.length) {
       const hasSame = existing.some((e) => e.player_id === player_id);
       await eventsCol.deleteMany({ match_id: matchId, type: "STAR" });
@@ -136,7 +164,9 @@ export const deleteEvent: RequestHandler = async (req, res) => {
   const eventId = Number(req.params.eventId);
   if (!matchId || !eventId)
     return res.status(400).json({ error: "IDs inválidos" });
-  await (await col("match_events")).deleteOne({ id: eventId, match_id: matchId });
+  await (
+    await col("match_events")
+  ).deleteOne({ id: eventId, match_id: matchId });
   res.json({ ok: true });
 };
 

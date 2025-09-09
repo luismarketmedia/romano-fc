@@ -93,13 +93,25 @@ export async function getDb(): Promise<Db> {
 
   // Ensure indexes (best-effort)
   await Promise.all([
-    cachedDb.collection<WithId<Team>>("teams").createIndex({ id: 1 }, { unique: true }),
-    cachedDb.collection<WithId<Player>>("players").createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<Team>>("teams")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<Player>>("players")
+      .createIndex({ id: 1 }, { unique: true }),
     cachedDb.collection<WithId<Player>>("players").createIndex({ team_id: 1 }),
-    cachedDb.collection<WithId<Lineup>>("lineups").createIndex({ team_id: 1 }, { unique: true }),
-    cachedDb.collection<WithId<Match>>("matches").createIndex({ id: 1 }, { unique: true }),
-    cachedDb.collection<WithId<MatchEvent>>("match_events").createIndex({ id: 1 }, { unique: true }),
-    cachedDb.collection<WithId<MatchEvent>>("match_events").createIndex({ match_id: 1 }),
+    cachedDb
+      .collection<WithId<Lineup>>("lineups")
+      .createIndex({ team_id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<Match>>("matches")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<MatchEvent>>("match_events")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<MatchEvent>>("match_events")
+      .createIndex({ match_id: 1 }),
   ]);
 
   return cachedDb;

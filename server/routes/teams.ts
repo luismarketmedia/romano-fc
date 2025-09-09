@@ -2,7 +2,9 @@ import { RequestHandler } from "express";
 import { col, getNextId, nowIso } from "../db";
 
 export const listTeams: RequestHandler = async (_req, res) => {
-  const teams = await (await col<any>("teams"))
+  const teams = await (
+    await col<any>("teams")
+  )
     .aggregate([
       {
         $lookup: {
@@ -63,7 +65,9 @@ export const deleteTeam: RequestHandler = async (req, res) => {
   const teams = await col("teams");
   const cur = await teams.findOne({ id });
   if (!cur) return res.status(404).json({ error: "Time não encontrado" });
-  await (await col("players")).updateMany({ team_id: id }, { $set: { team_id: null } });
+  await (
+    await col("players")
+  ).updateMany({ team_id: id }, { $set: { team_id: null } });
   await teams.deleteOne({ id });
   res.json({ ok: true });
 };

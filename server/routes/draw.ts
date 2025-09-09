@@ -20,7 +20,9 @@ export const drawTeams: RequestHandler = async (req, res) => {
 
   const playersCol = await col<any>("players");
   const eligible = await playersCol
-    .find(paidOnly ? { $or: [{ paid: 1 }, { paid: true }] } : {}, { projection: { _id: 0 } })
+    .find(paidOnly ? { $or: [{ paid: 1 }, { paid: true }] } : {}, {
+      projection: { _id: 0 },
+    })
     .toArray();
 
   const positions = ["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"] as const;
@@ -66,12 +68,20 @@ export const drawTeams: RequestHandler = async (req, res) => {
       let team = await teamsCol.findOne({ name });
       if (!team) {
         const id = await getNextId("teams");
-        await teamsCol.insertOne({ id, name, color: null, created_at: new Date().toISOString() });
+        await teamsCol.insertOne({
+          id,
+          name,
+          color: null,
+          created_at: new Date().toISOString(),
+        });
         team = await teamsCol.findOne({ id });
       }
       const teamId = team!.id as number;
       const ids = result[i].players.map((p) => p.id);
-      await playersCol.updateMany({ id: { $in: ids } }, { $set: { team_id: teamId } });
+      await playersCol.updateMany(
+        { id: { $in: ids } },
+        { $set: { team_id: teamId } },
+      );
     }
   }
 
