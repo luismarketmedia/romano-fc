@@ -157,10 +157,9 @@ function TeamColumn({
   events: MatchEvent[];
   currentStarId?: number;
   isAdding: boolean;
-  isDeleting: boolean;
   isNumbering: boolean;
   onSetNumber: (playerId: number, n: number | null) => void;
-  onDeleteEvent: (eventId: number) => void;
+  onDeleteEvent: (eventId: number) => Promise<any>;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
 }) {
   return (
