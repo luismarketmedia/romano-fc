@@ -143,7 +143,7 @@ export default function MatchManage() {
   useEffect(() => {
     if (!timer.isRunning) return;
     if (currentElapsed >= halfDurMs) {
-      setTimer((t) => ({ half: Math.min(2, (t.half + 1) as 1 | 2), isRunning: false, baseElapsed: 0, startedAt: 0 }));
+      setTimer((t) => ({ half: (t.half === 1 ? 2 : 2) as 1 | 2, isRunning: false, baseElapsed: 0, startedAt: 0 }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentElapsed]);
@@ -176,7 +176,7 @@ export default function MatchManage() {
   };
 
   const endHalf = () => {
-    setTimer((t) => ({ half: Math.min(2, (t.half + 1) as 1 | 2), isRunning: false, baseElapsed: 0, startedAt: 0 }));
+    setTimer((t) => ({ half: (t.half === 1 ? 2 : 2) as 1 | 2, isRunning: false, baseElapsed: 0, startedAt: 0 }));
   };
 
   return (
