@@ -103,12 +103,12 @@ export async function col<T = any>(name: string): Promise<Collection<T>> {
 export async function getNextId(key: string): Promise<number> {
   const db = await getDb();
   const counters = db.collection<{ _id: string; seq: number }>("counters");
-  const r = await counters.findOneAndUpdate(
+  const doc = await counters.findOneAndUpdate(
     { _id: key },
     { $inc: { seq: 1 } },
     { upsert: true, returnDocument: "after" },
   );
-  const seq = r.value?.seq ?? 1;
+  const seq = (doc as any)?.seq ?? 1;
   return Number(seq);
 }
 
