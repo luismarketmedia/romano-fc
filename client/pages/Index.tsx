@@ -365,6 +365,9 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
   const [teamId, setTeamId] = useState<string>(
     player?.team_id ? String(player.team_id) : "none",
   );
+  const [number, setNumber] = useState<string>(
+    player?.number != null ? String(player.number) : ""
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -718,7 +721,7 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Escalação — {team.name}</DialogTitle>
+          <DialogTitle>Escala��ão — {team.name}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
           {role("goleiro", "Goleiro")}
