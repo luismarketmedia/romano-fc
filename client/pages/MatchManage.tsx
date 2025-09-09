@@ -119,6 +119,7 @@ export default function MatchManage() {
             events={evs}
             currentStarId={starPlayerId}
             onSetNumber={(playerId, n) => setNumber.mutate({ id: playerId, number: n })}
+            onDeleteEvent={(eventId) => del.mutate(eventId)}
             onEvent={(playerId, type) =>
               add.mutate({
                 team_id: q.data?.match.team_b_id,
