@@ -25,6 +25,39 @@ export const getLineup: RequestHandler = async (req, res) => {
     `SELECT id, name FROM players WHERE team_id = ? ORDER BY name`,
     [teamId],
   );
+
+  // Sanitize lineup: remove players no longer on this team
+  if (lineup && lineup.team_id) {
+    const validIds = new Set((players as any[]).map((p) => p.id));
+    const keys = Object.keys(emptyLineup) as (keyof typeof emptyLineup)[];
+    let changed = false;
+    const next: any = { ...lineup };
+    for (const k of keys) {
+      const val = lineup[k as string];
+      if (val != null && !validIds.has(val)) {
+        next[k as string] = null;
+        changed = true;
+      }
+    }
+    if (changed) {
+      await run(
+        `UPDATE lineups SET goleiro=?, ala_direito=?, ala_esquerdo=?, frente=?, zag=?, meio=?, reserva1=?, reserva2=?, updated_at=datetime('now') WHERE team_id=?`,
+        [
+          next.goleiro ?? null,
+          next.ala_direito ?? null,
+          next.ala_esquerdo ?? null,
+          next.frente ?? null,
+          next.zag ?? null,
+          next.meio ?? null,
+          next.reserva1 ?? null,
+          next.reserva2 ?? null,
+          teamId,
+        ],
+      );
+      lineup = next;
+    }
+  }
+
   res.json({ lineup, players });
 };
 
