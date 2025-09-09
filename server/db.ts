@@ -56,29 +56,23 @@ export interface MatchEvent {
 
 type WithId<T> = T & { _id?: any };
 
-const URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.MONGODB_DB || "romano";
-
-if (!URI) {
-  // In dev or CI environments, make it explicit if missing
-  console.warn(
-    "MONGODB_URI is not set. Please configure it via environment variables.",
-  );
-}
-
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
 export async function getDb(): Promise<Db> {
   if (cachedDb) return cachedDb;
+  const uri = process.env.MONGODB_URI;
+  const dbName = process.env.MONGODB_DB || "romano";
+  if (!uri || !/^mongodb(\+srv)?:\/\//.test(uri)) {
+    throw new Error("MONGODB_URI is missing or invalid");
+  }
   if (!cachedClient) {
-    if (!URI) throw new Error("Missing MONGODB_URI");
-    cachedClient = new MongoClient(URI, {
+    cachedClient = new MongoClient(uri, {
       serverSelectionTimeoutMS: 10000,
     });
     await cachedClient.connect();
   }
-  cachedDb = cachedClient.db(DB_NAME);
+  cachedDb = cachedClient.db(dbName);
 
   // Ensure indexes (best-effort)
   await Promise.all([
