@@ -61,11 +61,8 @@ export function Header() {
           />
           <div>
             <h1 className="text-xl font-extrabold tracking-tight">
-              Romano Esporte Clube
+              Romano FC
             </h1>
-            <p className="text-xs text-muted-foreground">
-              Mini dashboard • Times • Pessoas • Sorteios
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -86,7 +83,6 @@ export function Header() {
           <div className="flex items-center gap-2">
             <DevSeedButton />
             <DevClearButton />
-            <ThemeBadge />
           </div>
         </div>
       </div>
