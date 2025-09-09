@@ -1031,8 +1031,12 @@ export function Sorteio() {
     }) => api.drawTeams(payload),
     onSuccess: (r) => setResult(r),
   });
+  const qc = useQueryClient();
   const genMut = useMutation({
     mutationFn: (ids: number[]) => api.generateMatches(ids),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
   });
 
   const run = () => {
@@ -1040,14 +1044,26 @@ export function Sorteio() {
   };
 
   const gerarJogos = async () => {
-    const teams = await api.listTeams();
-    const ids: number[] = [];
-    (result?.teams ?? []).forEach((t) => {
-      const match = teams.find((dbt) => dbt.name === t.name);
-      if (match) ids.push(match.id);
-    });
-    if (ids.length < 2) return;
-    genMut.mutate(ids);
+    try {
+      const all = await api.listTeams();
+      const neededNames = (result?.teams ?? []).map((t) => t.name);
+      const ids: number[] = [];
+      for (const name of neededNames) {
+        let team = all.find((dbt) => dbt.name === name);
+        if (!team) {
+          team = await api.createTeam({ name });
+        }
+        if (team && !ids.includes(team.id)) ids.push(team.id);
+      }
+      if (ids.length < 2) {
+        window.alert("Crie pelo menos dois times para gerar jogos.");
+        return;
+      }
+      genMut.mutate(ids);
+    } catch (e) {
+      console.error(e);
+      window.alert("Falha ao gerar jogos. Tente novamente.");
+    }
   };
 
   return (
