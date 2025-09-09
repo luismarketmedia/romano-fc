@@ -786,13 +786,19 @@ export function Sorteio() {
   const [apply, setApply] = useState<boolean>(false);
   const [result, setResult] = useState<DrawResponse | null>(null);
 
-  const run = async () => {
-    const r = await api.drawTeams({ teamCount, paidOnly, apply });
-    setResult(r);
+  const drawMut = useMutation({
+    mutationFn: (payload: { teamCount: number; paidOnly?: boolean; apply?: boolean }) => api.drawTeams(payload),
+    onSuccess: (r) => setResult(r),
+  });
+  const genMut = useMutation({
+    mutationFn: (ids: number[]) => api.generateMatches(ids),
+  });
+
+  const run = () => {
+    drawMut.mutate({ teamCount, paidOnly, apply });
   };
 
   const gerarJogos = async () => {
-    // Pair teams in order using DB team ids by name
     const teams = await api.listTeams();
     const ids: number[] = [];
     (result?.teams ?? []).forEach((t) => {
@@ -800,7 +806,7 @@ export function Sorteio() {
       if (match) ids.push(match.id);
     });
     if (ids.length < 2) return;
-    await api.generateMatches(ids);
+    genMut.mutate(ids);
   };
 
   return (
