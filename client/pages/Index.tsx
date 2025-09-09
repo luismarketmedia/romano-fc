@@ -626,13 +626,54 @@ export function TimesTable() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const matchesQ = useQuery({ queryKey: ["matches"], queryFn: api.listMatches });
   const teams = teamsQ.data ?? [];
+
+  const statsByTeam = useMemo(() => {
+    const map: Record<number, { points: number; gf: number; ga: number }> = {};
+    for (const t of teams) map[t.id] = { points: 0, gf: 0, ga: 0 };
+    for (const m of (matchesQ.data ?? []) as any[]) {
+      const a = m.team_a_id as number;
+      const b = m.team_b_id as number;
+      const ga = Number(m.score_a) || 0;
+      const gb = Number(m.score_b) || 0;
+      if (map[a]) {
+        map[a].gf += ga;
+        map[a].ga += gb;
+      }
+      if (map[b]) {
+        map[b].gf += gb;
+        map[b].ga += ga;
+      }
+      if (ga > gb) map[a] && (map[a].points += 3);
+      else if (gb > ga) map[b] && (map[b].points += 3);
+      else {
+        map[a] && (map[a].points += 1);
+        map[b] && (map[b].points += 1);
+      }
+    }
+    return map;
+  }, [teams, matchesQ.data]);
+
   const filtered = teams.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase()),
   );
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const pa = statsByTeam[a.id]?.points ?? 0;
+      const pb = statsByTeam[b.id]?.points ?? 0;
+      if (pb !== pa) return pb - pa;
+      const gda = (statsByTeam[a.id]?.gf ?? 0) - (statsByTeam[a.id]?.ga ?? 0);
+      const gdb = (statsByTeam[b.id]?.gf ?? 0) - (statsByTeam[b.id]?.ga ?? 0);
+      if (gdb !== gda) return gdb - gda;
+      return a.name.localeCompare(b.name);
+    });
+  }, [filtered, statsByTeam]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const start = (page - 1) * pageSize;
-  const paged = filtered.slice(start, start + pageSize);
+  const paged = sorted.slice(start, start + pageSize);
 
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
@@ -681,6 +722,9 @@ export function TimesTable() {
             <TableHead>Nome</TableHead>
             <TableHead>Cor</TableHead>
             <TableHead>Jogadores</TableHead>
+            <TableHead className="text-right">Pts</TableHead>
+            <TableHead className="text-right">GF</TableHead>
+            <TableHead className="text-right">GA</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -702,6 +746,9 @@ export function TimesTable() {
                 )}
               </TableCell>
               <TableCell>{t.playerCount ?? "—"}</TableCell>
+              <TableCell className="text-right">{statsByTeam[t.id]?.points ?? 0}</TableCell>
+              <TableCell className="text-right">{statsByTeam[t.id]?.gf ?? 0}</TableCell>
+              <TableCell className="text-right">{statsByTeam[t.id]?.ga ?? 0}</TableCell>
               <TableCell className="text-right space-x-1">
                 <TeamDialog team={t} icon />
                 <TeamPlayersDialog team={t} icon />
@@ -1026,7 +1073,7 @@ function TeamPlayersDialog({ team, icon }: { team: Team; icon?: boolean }) {
                   <TableRow key={p.id}>
                     <TableCell className="w-12">{p.number != null ? p.number : "—"}</TableCell>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{s.goals || "—"}</TableCell>
+                    <TableCell>{s.goals || "���"}</TableCell>
                     <TableCell>{s.yellow || "—"}</TableCell>
                     <TableCell>{s.red || "—"}</TableCell>
                   </TableRow>
