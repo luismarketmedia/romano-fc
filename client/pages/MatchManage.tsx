@@ -230,12 +230,16 @@ function TeamColumn({
   );
 }
 
-function BadgeCount({ label, count }: { label: string; count: number }) {
+function BadgeCount({ label, count, onClick }: { label: string; count: number; onClick?: () => void }) {
   if (!count) return <span className="text-xs text-muted-foreground">{label}</span>;
+  const Cmp: any = onClick ? "button" : "span";
   return (
-    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs">
+    <Cmp
+      className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs hover:bg-accent hover:text-accent-foreground"
+      onClick={onClick}
+    >
       {label} <span className="ml-1 font-semibold">{count}</span>
-    </span>
+    </Cmp>
   );
 }
 
