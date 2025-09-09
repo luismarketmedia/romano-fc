@@ -231,6 +231,17 @@ export function PessoasTable() {
       });
     },
   });
+  const setNumber = useMutation({
+    mutationFn: ({ id, number }: { id: number; number: number | null }) =>
+      api.updatePlayer(id, { number }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["players"] });
+      qc.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "lineup",
+      });
+    },
+  });
 
   const [search, setSearch] = useState("");
   const [pos, setPos] = useState<string>("all");
@@ -348,8 +359,31 @@ export function PessoasTable() {
         <TableBody>
           {paged.map((p) => (
             <TableRow key={p.id}>
-              <TableCell className="w-12">
-                {p.number != null ? p.number : "—"}
+              <TableCell className="w-20">
+                <Input
+                  type="number"
+                  min={0}
+                  max={99}
+                  defaultValue={p.number ?? ""}
+                  placeholder="#"
+                  className="h-8 w-16 px-2"
+                  disabled={setNumber.isPending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const v = (e.target as HTMLInputElement).value;
+                      const n = v === "" ? null : Number(v);
+                      if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                      setNumber.mutate({ id: p.id, number: n });
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    const n = v === "" ? null : Number(v);
+                    if (n !== null && (!Number.isFinite(n) || n < 0 || n > 99)) return;
+                    setNumber.mutate({ id: p.id, number: n });
+                  }}
+                />
               </TableCell>
               <TableCell className="font-medium">{p.name}</TableCell>
               <TableCell>{p.position}</TableCell>
