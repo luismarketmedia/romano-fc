@@ -162,6 +162,7 @@ function TeamColumn({
   onDeleteEvent: (eventId: number) => Promise<any>;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;
 }) {
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   return (
     <div className="rounded-xl border bg-card p-4 shadow-sm">
       <div className="text-lg font-semibold mb-3">{title}</div>
