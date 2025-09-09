@@ -77,15 +77,24 @@ export async function getDb(): Promise<Db> {
       options.tlsAllowInvalidCertificates = true;
       options.tlsAllowInvalidHostnames = true;
     }
+    // Prefer IPv4 for driver-level DNS (extra safety in some envs)
+    (options as any).family = 4;
+
     cachedClient = new MongoClient(uri, options);
     try {
       await cachedClient.connect();
-    } catch (e) {
+    } catch (e: any) {
       try {
         await cachedClient.close();
       } catch {}
       cachedClient = null;
       cachedDb = null;
+      // Log the original error for server logs without exposing secrets
+      console.error("[DB] Connection error:", {
+        name: e?.name,
+        code: e?.code,
+        message: e?.message,
+      });
       throw new Error("DATABASE_CONNECTION_FAILED");
     }
   }
