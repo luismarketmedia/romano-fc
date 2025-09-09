@@ -149,7 +149,12 @@ function TeamColumn({
               key={p.id}
               className="flex items-center justify-between rounded border px-3 py-2"
             >
-              <span className="font-medium">{p.name}</span>
+              <span className="font-medium flex items-center gap-2">
+                {p.number != null ? (
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-semibold">{p.number}</span>
+                ) : null}
+                {p.name}
+              </span>
               <div className="flex items-center gap-2">
                 <StarBadge active={isStar} />
                 <BadgeCount label="⚽" count={g} />
@@ -173,6 +178,24 @@ function TeamColumn({
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onEvent(p.id, "RED")}>
                       Vermelho
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const v = window.prompt("Número da camisa (0-99)", p.number != null ? String(p.number) : "");
+                        if (v == null) return;
+                        const n = Number(v);
+                        if (!Number.isFinite(n) || n < 0 || n > 99) return;
+                        fetch(`/api/players/${p.id}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ number: n }),
+                        }).then(() => {
+                          // refetch match data
+                          location.reload();
+                        });
+                      }}
+                    >
+                      Definir número
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
