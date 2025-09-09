@@ -34,6 +34,11 @@ export default function MatchManage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
   });
 
+  const del = useMutation({
+    mutationFn: (eventId: number) => api.deleteEvent(matchId, eventId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+  });
+
   const setNumber = useMutation({
     mutationFn: ({ id, number }: { id: number; number: number | null }) =>
       api.updatePlayer(id, { number }),
