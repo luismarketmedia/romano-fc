@@ -194,7 +194,7 @@ function StatCard({ title, value }: { title: string; value: number }) {
   );
 }
 
-function PessoasTable() {
+export function PessoasTable() {
   const qc = useQueryClient();
   const playersQ = useQuery({ queryKey: ["players"], queryFn: api.listPlayers });
   const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
@@ -461,7 +461,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
   );
 }
 
-function TimesTable() {
+export function TimesTable() {
   const qc = useQueryClient();
   const teamsQ = useQuery({ queryKey: ["teams"], queryFn: api.listTeams });
   const del = useMutation({
@@ -738,7 +738,7 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
   );
 }
 
-function Sorteio() {
+export function Sorteio() {
   const [teamCount, setTeamCount] = useState<number>(2);
   const [paidOnly, setPaidOnly] = useState<boolean>(true);
   const [apply, setApply] = useState<boolean>(false);
@@ -833,7 +833,7 @@ function Sorteio() {
   );
 }
 
-function Jogos() {
+export function Jogos() {
   const qc = useQueryClient();
   const matchesQ = useQuery({
     queryKey: ["matches"],
