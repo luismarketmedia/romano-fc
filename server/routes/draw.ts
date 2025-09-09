@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { all, get, insert, run } from "../db";
+import { col, getNextId } from "../db";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -18,10 +18,12 @@ export const drawTeams: RequestHandler = async (req, res) => {
       .status(400)
       .json({ error: "Informe a quantidade de times (>= 2)" });
 
-  const eligible = await all(
-    `SELECT * FROM players WHERE (? = 0 OR paid = 1) ORDER BY RANDOM()`,
-    [paidOnly ? 1 : 0],
-  );
+  const playersCol = await col<any>("players");
+  const eligible = await playersCol
+    .find(paidOnly ? { $or: [{ paid: 1 }, { paid: true }] } : {}, {
+      projection: { _id: 0 },
+    })
+    .toArray();
 
   const positions = ["GOL", "DEF", "ALAD", "ALAE", "MEI", "ATA"] as const;
   const buckets: Record<string, any[]> = {};
@@ -34,10 +36,7 @@ export const drawTeams: RequestHandler = async (req, res) => {
     (_, i) => ({ name: `Time ${i + 1}`, players: [] }),
   );
 
-  // Use lineup roles as requirements (if exist)
-  const lineups: any[] = await all(`SELECT * FROM lineups ORDER BY team_id`);
-
-  const assignRole = (teamIdx: number, role: string, needPos: string) => {
+  const assignRole = (teamIdx: number, _role: string, needPos: string) => {
     const pool = buckets[needPos] as any[];
     if (pool.length === 0) return;
     const player = pool.shift();
@@ -63,18 +62,26 @@ export const drawTeams: RequestHandler = async (req, res) => {
   }
 
   if (apply) {
+    const teamsCol = await col<any>("teams");
     for (let i = 0; i < n; i++) {
       const name = `Time ${i + 1}`;
-      let team = await get<any>("SELECT * FROM teams WHERE name = ?", [name]);
+      let team = await teamsCol.findOne({ name });
       if (!team) {
-        const id = await insert("INSERT INTO teams (name) VALUES (?)", [name]);
-        team = await get<any>("SELECT * FROM teams WHERE id = ?", [id]);
+        const id = await getNextId("teams");
+        await teamsCol.insertOne({
+          id,
+          name,
+          color: null,
+          created_at: new Date().toISOString(),
+        });
+        team = await teamsCol.findOne({ id });
       }
-      const teamId = team.id as number;
+      const teamId = team!.id as number;
       const ids = result[i].players.map((p) => p.id);
-      for (const pid of ids) {
-        await run("UPDATE players SET team_id = ? WHERE id = ?", [teamId, pid]);
-      }
+      await playersCol.updateMany(
+        { id: { $in: ids } },
+        { $set: { team_id: teamId } },
+      );
     }
   }
 

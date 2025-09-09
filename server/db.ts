@@ -1,6 +1,4 @@
-import initSqlJs, { Database as SqlDatabase } from "sql.js";
-import fs from "fs";
-import path from "path";
+import { MongoClient, Db, Collection, ServerApiVersion } from "mongodb";
 import os from "os";
 
 export type Position = "GOL" | "DEF" | "ALAD" | "ALAE" | "MEI" | "ATA";
@@ -17,241 +15,126 @@ export interface Player {
   id: number;
   name: string;
   position: Position;
-  paid: number;
+  paid: number | boolean; // accept both for compatibility
   team_id: number | null;
+  number?: number | null;
   created_at: string;
 }
 
-const IS_SERVERLESS = Boolean(
-  process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME,
-);
-const DB_PATH = IS_SERVERLESS
-  ? path.join(os.tmpdir(), "data.sqlite")
-  : path.join(process.cwd(), "data.sqlite");
-let dbPromise: Promise<SqlDatabase> | null = null;
-
-async function init(): Promise<SqlDatabase> {
-  // Resolve absolute path to the sql.js WASM file. In Netlify functions, assets
-  // from `included_files` are copied under the function's directory, preserving
-  // their relative path (e.g. netlify/functions/node_modules/sql.js/dist/...).
-  // We resolve from this file's directory to be robust in both CJS/ESM builds.
-  const { fileURLToPath } = await import("url");
-  const dirname =
-    typeof __dirname !== "undefined"
-      ? __dirname
-      : path.dirname(fileURLToPath(import.meta.url));
-
-  const wasmPath = IS_SERVERLESS
-    ? path.join(dirname, "node_modules/sql.js/dist/sql-wasm.wasm")
-    : path.join(process.cwd(), "node_modules/sql.js/dist/sql-wasm.wasm");
-
-  const SQL = await initSqlJs({
-    locateFile: () => wasmPath,
-  });
-  let db: SqlDatabase;
-  if (fs.existsSync(DB_PATH)) {
-    const filebuffer = fs.readFileSync(DB_PATH);
-    db = new SQL.Database(new Uint8Array(filebuffer));
-  } else {
-    db = new SQL.Database();
-  }
-  migrate(db);
-  persist(db);
-  return db;
+export interface Lineup {
+  team_id: number;
+  goleiro: number | null;
+  ala_direito: number | null;
+  ala_esquerdo: number | null;
+  frente: number | null;
+  zag: number | null;
+  meio: number | null;
+  reserva1: number | null;
+  reserva2: number | null;
+  updated_at: string;
 }
 
-export async function getDb(): Promise<SqlDatabase> {
-  if (!dbPromise) dbPromise = init();
-  return dbPromise;
+export interface Match {
+  id: number;
+  team_a_id: number;
+  team_b_id: number;
+  scheduled_at?: string | null;
+  status: string;
+  stage?: string | null;
+  created_at: string;
 }
 
-export function persist(db: SqlDatabase) {
-  const data = db.export();
-  const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
+export interface MatchEvent {
+  id: number;
+  match_id: number;
+  team_id: number;
+  player_id: number;
+  type: "GOAL" | "YELLOW" | "RED" | "STAR";
+  minute?: number | null;
+  created_at: string;
 }
 
-function migrate(db: SqlDatabase) {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS teams (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      color TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS players (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      position TEXT NOT NULL CHECK (position in ('GOL','DEF','ALAD','ALAE','MEI','ATA')),
-      paid INTEGER NOT NULL DEFAULT 0,
-      team_id INTEGER NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE SET NULL
-    );
-    CREATE TABLE IF NOT EXISTS lineups (
-      team_id INTEGER PRIMARY KEY,
-      goleiro INTEGER NULL,
-      ala_direito INTEGER NULL,
-      ala_esquerdo INTEGER NULL,
-      frente INTEGER NULL,
-      zag INTEGER NULL,
-      meio INTEGER NULL,
-      reserva1 INTEGER NULL,
-      reserva2 INTEGER NULL,
-      updated_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id);
-    CREATE INDEX IF NOT EXISTS idx_players_position ON players(position);
+type WithId<T> = T & { _id?: any };
 
-    CREATE TABLE IF NOT EXISTS matches (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      team_a_id INTEGER NOT NULL,
-      team_b_id INTEGER NOT NULL,
-      scheduled_at TEXT,
-      status TEXT DEFAULT 'scheduled',
-      stage TEXT DEFAULT 'classificatoria',
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(team_a_id) REFERENCES teams(id) ON DELETE CASCADE,
-      FOREIGN KEY(team_b_id) REFERENCES teams(id) ON DELETE CASCADE
-    );
+let cachedClient: MongoClient | null = null;
+let cachedDb: Db | null = null;
 
-    CREATE TABLE IF NOT EXISTS match_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      match_id INTEGER NOT NULL,
-      team_id INTEGER NOT NULL,
-      player_id INTEGER NOT NULL,
-      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED','STAR')),
-      minute INTEGER,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
-      FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id);
-  `);
-
-  // Schema upgrades: add new columns if missing
-  const cols = db.exec("PRAGMA table_info('teams')");
-  const teamColNames = new Set<string>(
-    (cols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
-  );
-  if (!teamColNames.has("line_count"))
-    db.run("ALTER TABLE teams ADD COLUMN line_count INTEGER");
-  if (!teamColNames.has("formation"))
-    db.run("ALTER TABLE teams ADD COLUMN formation TEXT");
-  if (!teamColNames.has("reserves_count"))
-    db.run("ALTER TABLE teams ADD COLUMN reserves_count INTEGER");
-
-  // Rebuild players table to allow ALAD/ALAE if old schema detected
-  const master = db.exec(
-    "SELECT sql FROM sqlite_master WHERE type='table' AND name='players'",
-  );
-  const createSql: string = master?.[0]?.values?.[0]?.[0] || "";
-  if (createSql && !createSql.includes("ALAD")) {
-    db.run("ALTER TABLE players RENAME TO players_old");
-    db.run(`CREATE TABLE players (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      position TEXT NOT NULL CHECK (position in ('GOL','DEF','ALAD','ALAE','MEI','ATA')),
-      paid INTEGER NOT NULL DEFAULT 0,
-      team_id INTEGER NULL,
-      number INTEGER NULL,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE SET NULL
-    )`);
-    db.run(
-      "INSERT INTO players (id,name,position,paid,team_id,number,created_at) SELECT id,name,position,paid,team_id,NULL as number,created_at FROM players_old",
-    );
-    db.run("DROP TABLE players_old");
-    db.run("CREATE INDEX IF NOT EXISTS idx_players_team ON players(team_id)");
-    db.run(
-      "CREATE INDEX IF NOT EXISTS idx_players_position ON players(position)",
-    );
+export async function getDb(): Promise<Db> {
+  if (cachedDb) return cachedDb;
+  const uri = process.env.MONGODB_URI;
+  const dbName = process.env.MONGODB_DB || "romano";
+  if (!uri || !/^mongodb(\+srv)?:\/\//.test(uri)) {
+    throw new Error("MONGODB_URI is missing or invalid");
   }
-
-  // Add number column if missing (for existing correct schema)
-  const pcols = db.exec("PRAGMA table_info('players')");
-  const pcolNames = new Set<string>(
-    (pcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
-  );
-  if (!pcolNames.has("number")) {
-    db.run("ALTER TABLE players ADD COLUMN number INTEGER NULL");
+  if (!cachedClient) {
+    const insecure = process.env.MONGODB_TLS_INSECURE === "1";
+    const options: any = {
+      serverSelectionTimeoutMS: 10000,
+      serverApi: { version: ServerApiVersion.v1 },
+    };
+    if (insecure) {
+      options.tls = true;
+      options.tlsAllowInvalidCertificates = true;
+      options.tlsAllowInvalidHostnames = true;
+    }
+    cachedClient = new MongoClient(uri, options);
+    try {
+      await cachedClient.connect();
+    } catch (e) {
+      try {
+        await cachedClient.close();
+      } catch {}
+      cachedClient = null;
+      cachedDb = null;
+      throw new Error("DATABASE_CONNECTION_FAILED");
+    }
   }
+  cachedDb = cachedClient.db(dbName);
 
-  // Add stage column to matches if missing
-  const mcols = db.exec("PRAGMA table_info('matches')");
-  const mcolNames = new Set<string>(
-    (mcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
-  );
-  if (!mcolNames.has("stage")) {
-    db.run(
-      "ALTER TABLE matches ADD COLUMN stage TEXT DEFAULT 'classificatoria'",
-    );
-  }
+  // Ensure indexes (best-effort)
+  await Promise.all([
+    cachedDb
+      .collection<WithId<Team>>("teams")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<Player>>("players")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb.collection<WithId<Player>>("players").createIndex({ team_id: 1 }),
+    cachedDb
+      .collection<WithId<Lineup>>("lineups")
+      .createIndex({ team_id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<Match>>("matches")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<MatchEvent>>("match_events")
+      .createIndex({ id: 1 }, { unique: true }),
+    cachedDb
+      .collection<WithId<MatchEvent>>("match_events")
+      .createIndex({ match_id: 1 }),
+  ]);
 
-  // Rebuild match_events to support STAR type if old schema detected
-  const meMaster = db.exec(
-    "SELECT sql FROM sqlite_master WHERE type='table' AND name='match_events'",
-  );
-  const meCreateSql: string = meMaster?.[0]?.values?.[0]?.[0] || "";
-  if (meCreateSql && !meCreateSql.includes("'STAR'")) {
-    db.run("ALTER TABLE match_events RENAME TO match_events_old");
-    db.run(`CREATE TABLE match_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      match_id INTEGER NOT NULL,
-      team_id INTEGER NOT NULL,
-      player_id INTEGER NOT NULL,
-      type TEXT NOT NULL CHECK (type in ('GOAL','YELLOW','RED','STAR')),
-      minute INTEGER,
-      created_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
-      FOREIGN KEY(team_id) REFERENCES teams(id) ON DELETE CASCADE,
-      FOREIGN KEY(player_id) REFERENCES players(id) ON DELETE CASCADE
-    )`);
-    db.run(
-      "INSERT INTO match_events (id, match_id, team_id, player_id, type, minute, created_at) SELECT id, match_id, team_id, player_id, type, minute, created_at FROM match_events_old",
-    );
-    db.run("DROP TABLE match_events_old");
-    db.run(
-      "CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id)",
-    );
-  }
+  return cachedDb;
 }
 
-export async function all<T = any>(
-  sql: string,
-  params: any[] = [],
-): Promise<T[]> {
+export async function col<T = any>(name: string): Promise<Collection<T>> {
   const db = await getDb();
-  const stmt = db.prepare(sql);
-  stmt.bind(params);
-  const rows: any[] = [];
-  while (stmt.step()) rows.push(stmt.getAsObject());
-  stmt.free();
-  return rows as T[];
+  return db.collection<T>(name);
 }
 
-export async function get<T = any>(
-  sql: string,
-  params: any[] = [],
-): Promise<T | undefined> {
-  const rows = await all<T>(sql, params);
-  return rows[0];
-}
-
-export async function run(sql: string, params: any[] = []): Promise<void> {
+// Simple numeric id generator similar to SQL autoincrement
+export async function getNextId(key: string): Promise<number> {
   const db = await getDb();
-  db.run(sql, params);
-  persist(db);
+  const counters = db.collection<{ _id: string; seq: number }>("counters");
+  const doc = await counters.findOneAndUpdate(
+    { _id: key },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: "after" },
+  );
+  const seq = (doc as any)?.seq ?? 1;
+  return Number(seq);
 }
 
-export async function insert(sql: string, params: any[] = []): Promise<number> {
-  const db = await getDb();
-  db.run(sql, params);
-  const idRow = db.exec("SELECT last_insert_rowid() as id");
-  persist(db);
-  const id = idRow?.[0]?.values?.[0]?.[0];
-  return Number(id);
+export function nowIso(): string {
+  return new Date().toISOString();
 }
