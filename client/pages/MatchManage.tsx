@@ -201,7 +201,7 @@ export default function MatchManage() {
                 {timer.half}º tempo • 20:00
               </div>
               <div className="text-lg font-semibold tabular-nums">
-                {mmss(currentElapsed)}
+                {mmss(Math.max(0, halfDurMs - currentElapsed))}
               </div>
             </div>
             <Button variant="secondary" onClick={toggleRun}>
