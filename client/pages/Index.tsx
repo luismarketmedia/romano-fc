@@ -843,7 +843,8 @@ export function Sorteio() {
           </label>
         </div>
         <div className="flex items-end">
-          <Button className="w-full" onClick={run}>
+          <Button className="w-full" disabled={drawMut.isPending} onClick={run}>
+            {drawMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sortear
           </Button>
         </div>
