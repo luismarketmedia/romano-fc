@@ -48,7 +48,7 @@ export default function Index() {
   );
 }
 
-function Header() {
+export function Header() {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
