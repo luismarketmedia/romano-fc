@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "node:dns";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
@@ -21,6 +22,11 @@ import {
   generateMatches,
 } from "./routes/matches";
 import { seedAndDraw, clearDb } from "./routes/dev";
+
+// Prefer IPv4 for DNS lookups to avoid occasional IPv6 connectivity issues in serverless
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {}
 
 export function createServer() {
   const app = express();

@@ -58,63 +58,93 @@ type WithId<T> = T & { _id?: any };
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
+let connecting: Promise<Db> | null = null;
 
 export async function getDb(): Promise<Db> {
   if (cachedDb) return cachedDb;
+  if (connecting) return connecting;
+
   const uri = process.env.MONGODB_URI;
   const dbName = process.env.MONGODB_DB || "romano";
   if (!uri || !/^mongodb(\+srv)?:\/\//.test(uri)) {
     throw new Error("MONGODB_URI is missing or invalid");
   }
-  if (!cachedClient) {
+
+  connecting = (async () => {
     const insecure = process.env.MONGODB_TLS_INSECURE === "1";
-    const options: any = {
+    const baseOptions: any = {
       serverSelectionTimeoutMS: 10000,
+      maxPoolSize: 5,
       serverApi: { version: ServerApiVersion.v1 },
+      family: 4,
     };
     if (insecure) {
-      options.tls = true;
-      options.tlsAllowInvalidCertificates = true;
-      options.tlsAllowInvalidHostnames = true;
+      baseOptions.tls = true;
+      baseOptions.tlsAllowInvalidCertificates = true;
+      baseOptions.tlsAllowInvalidHostnames = true;
     }
-    cachedClient = new MongoClient(uri, options);
-    try {
-      await cachedClient.connect();
-    } catch (e) {
+
+    const attempts = 3;
+    let lastErr: any = null;
+    for (let i = 0; i < attempts; i++) {
+      const client = new MongoClient(uri, baseOptions);
       try {
-        await cachedClient.close();
-      } catch {}
-      cachedClient = null;
-      cachedDb = null;
-      throw new Error("DATABASE_CONNECTION_FAILED");
+        await client.connect();
+        cachedClient = client;
+        const db = client.db(dbName);
+        // Ensure indexes (best-effort, don't fail startup)
+        try {
+          await Promise.all([
+            db
+              .collection<WithId<Team>>("teams")
+              .createIndex({ id: 1 }, { unique: true }),
+            db
+              .collection<WithId<Player>>("players")
+              .createIndex({ id: 1 }, { unique: true }),
+            db
+              .collection<WithId<Player>>("players")
+              .createIndex({ team_id: 1 }),
+            db
+              .collection<WithId<Lineup>>("lineups")
+              .createIndex({ team_id: 1 }, { unique: true }),
+            db
+              .collection<WithId<Match>>("matches")
+              .createIndex({ id: 1 }, { unique: true }),
+            db
+              .collection<WithId<MatchEvent>>("match_events")
+              .createIndex({ id: 1 }, { unique: true }),
+            db
+              .collection<WithId<MatchEvent>>("match_events")
+              .createIndex({ match_id: 1 }),
+          ]);
+        } catch (idxErr) {
+          console.warn("[DB] Index ensure warning:", idxErr);
+        }
+        cachedDb = db;
+        return db;
+      } catch (e: any) {
+        lastErr = e;
+        try {
+          await client.close();
+        } catch {}
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+      }
     }
+
+    console.error("[DB] Connection error:", {
+      name: lastErr?.name,
+      code: lastErr?.code,
+      message: lastErr?.message,
+    });
+    throw new Error("DATABASE_CONNECTION_FAILED");
+  })();
+
+  try {
+    const db = await connecting;
+    return db;
+  } finally {
+    connecting = null;
   }
-  cachedDb = cachedClient.db(dbName);
-
-  // Ensure indexes (best-effort)
-  await Promise.all([
-    cachedDb
-      .collection<WithId<Team>>("teams")
-      .createIndex({ id: 1 }, { unique: true }),
-    cachedDb
-      .collection<WithId<Player>>("players")
-      .createIndex({ id: 1 }, { unique: true }),
-    cachedDb.collection<WithId<Player>>("players").createIndex({ team_id: 1 }),
-    cachedDb
-      .collection<WithId<Lineup>>("lineups")
-      .createIndex({ team_id: 1 }, { unique: true }),
-    cachedDb
-      .collection<WithId<Match>>("matches")
-      .createIndex({ id: 1 }, { unique: true }),
-    cachedDb
-      .collection<WithId<MatchEvent>>("match_events")
-      .createIndex({ id: 1 }, { unique: true }),
-    cachedDb
-      .collection<WithId<MatchEvent>>("match_events")
-      .createIndex({ match_id: 1 }),
-  ]);
-
-  return cachedDb;
 }
 
 export async function col<T = any>(name: string): Promise<Collection<T>> {
