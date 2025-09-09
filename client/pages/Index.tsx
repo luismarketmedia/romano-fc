@@ -395,7 +395,7 @@ function PlayerDialog({ player, icon }: { player?: Player; icon?: boolean }) {
             <label className="mb-1 block text-sm">Nome</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
               <label className="mb-1 block text-sm">Posição</label>
               <Select
@@ -721,7 +721,7 @@ function EscalacaoDialog({ team, icon }: { team: Team; icon?: boolean }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Escala��ão — {team.name}</DialogTitle>
+          <DialogTitle>Escalação — {team.name}</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-2">
           {role("goleiro", "Goleiro")}
