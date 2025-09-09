@@ -70,6 +70,13 @@ export interface LineupResponse {
 
 export type MatchStatus = "scheduled" | "playing" | "finished";
 
+export type MatchStage =
+  | "classificatoria"
+  | "oitavas"
+  | "quartas"
+  | "semi"
+  | "final";
+
 export interface Match {
   id: number;
   team_a_id: number;
@@ -80,6 +87,7 @@ export interface Match {
   score_b?: number;
   scheduled_at?: string | null;
   status: MatchStatus;
+  stage?: MatchStage;
 }
 
 export type EventType = "GOAL" | "YELLOW" | "RED" | "STAR";

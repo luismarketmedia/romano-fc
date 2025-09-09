@@ -1,10 +1,17 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { MatchEvent } from "@shared/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,12 +38,18 @@ export default function MatchManage() {
 
   const add = useMutation({
     mutationFn: (payload: any) => api.addEvent(matchId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
   });
 
   const del = useMutation({
     mutationFn: (eventId: number) => api.deleteEvent(matchId, eventId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["match", matchId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
   });
 
   const setNumber = useMutation({
@@ -79,14 +92,135 @@ export default function MatchManage() {
     );
   }
 
+  // Match timer state (20 min per half)
+  const halfDurMs = 20 * 60 * 1000;
+  const storageKey = Number.isFinite(matchId)
+    ? `matchTimer:${matchId}`
+    : undefined;
+  const [timer, setTimer] = useState<{
+    half: 1 | 2;
+    isRunning: boolean;
+    baseElapsed: number; // accumulated ms in current half when not running
+    startedAt: number; // timestamp when started
+  }>({ half: 1, isRunning: false, baseElapsed: 0, startedAt: 0 });
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+
+  // Load persisted timer
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.half === 1 || parsed.half === 2)) {
+          setTimer({
+            half: parsed.half,
+            isRunning: false,
+            baseElapsed: Number(parsed.baseElapsed) || 0,
+            startedAt: 0,
+          });
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
+
+  // Persist timer
+  useEffect(() => {
+    if (!storageKey) return;
+    const toSave = {
+      half: timer.half,
+      baseElapsed: timer.isRunning
+        ? timer.baseElapsed + (Date.now() - timer.startedAt)
+        : timer.baseElapsed,
+    };
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(toSave));
+    } catch {}
+  }, [timer, storageKey]);
+
+  // Ticker while running
+  useEffect(() => {
+    if (!timer.isRunning) return;
+    const id = setInterval(() => setNowMs(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [timer.isRunning]);
+
+  const currentElapsed = useMemo(() => {
+    return timer.isRunning
+      ? Math.max(
+          0,
+          Math.min(halfDurMs, timer.baseElapsed + (nowMs - timer.startedAt)),
+        )
+      : Math.max(0, Math.min(halfDurMs, timer.baseElapsed));
+  }, [timer.baseElapsed, timer.isRunning, timer.startedAt, nowMs]);
+
+  // Auto-end half at 20:00
+  useEffect(() => {
+    if (!timer.isRunning) return;
+    if (currentElapsed >= halfDurMs) {
+      setTimer((t) => ({
+        half: (t.half === 1 ? 2 : 2) as 1 | 2,
+        isRunning: false,
+        baseElapsed: 0,
+        startedAt: 0,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentElapsed]);
+
+  const mmss = (ms: number) => {
+    const totalSec = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+    const ss = String(totalSec % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  };
+
+  const currentMinuteAbs = useMemo(() => {
+    const minInHalf = Math.floor(currentElapsed / 60000);
+    return Math.min(40, (timer.half - 1) * 20 + minInHalf);
+  }, [currentElapsed, timer.half]);
+
+  const toggleRun = () => {
+    setTimer((t) => {
+      if (t.isRunning) {
+        const now = Date.now();
+        return {
+          ...t,
+          isRunning: false,
+          baseElapsed: Math.min(halfDurMs, t.baseElapsed + (now - t.startedAt)),
+          startedAt: 0,
+        };
+      }
+      return { ...t, isRunning: true, startedAt: Date.now() };
+    });
+  };
+
+  const endHalf = () => {
+    setTimer((t) => ({
+      half: (t.half === 1 ? 2 : 2) as 1 | 2,
+      isRunning: false,
+      baseElapsed: 0,
+      startedAt: 0,
+    }));
+  };
+
+  const setStage = useMutation({
+    mutationFn: (stage: any) => api.updateMatch(matchId, { stage }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["match", matchId] });
+      qc.invalidateQueries({ queryKey: ["matches"] });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       <div className="mx-auto max-w-6xl px-4 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <Button variant="outline" onClick={() => navigate(-1)}>
             Voltar
           </Button>
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 min-w-[240px]">
             <div className="text-xl font-bold">
               {q.data?.match.team_a_name} <span className="px-2">vs</span>{" "}
               {q.data?.match.team_b_name}
@@ -95,7 +229,45 @@ export default function MatchManage() {
               {scoreA} - {scoreB}
             </div>
           </div>
-          <div className="w-[88px]" />
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <div className="text-xs text-muted-foreground">
+                {timer.half}º tempo • 20:00
+              </div>
+              <div className="text-lg font-semibold tabular-nums">
+                {mmss(Math.max(0, halfDurMs - currentElapsed))}
+              </div>
+            </div>
+            <div className="w-40">
+              <Select
+                value={q.data?.match.stage ?? "classificatoria"}
+                onValueChange={(v) => setStage.mutate(v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="classificatoria">
+                    Classificatório
+                  </SelectItem>
+                  <SelectItem value="oitavas">Oitavas</SelectItem>
+                  <SelectItem value="quartas">Quartas</SelectItem>
+                  <SelectItem value="semi">Semi</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="secondary" onClick={toggleRun}>
+              {timer.isRunning ? "Pausar" : "Iniciar"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={endHalf}
+              disabled={timer.half === 2 && currentElapsed === 0}
+            >
+              Encerrar tempo
+            </Button>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4">
@@ -107,6 +279,7 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
+            currentMinute={currentMinuteAbs}
             onSetNumber={(playerId, n) =>
               setNumber.mutate({ id: playerId, number: n })
             }
@@ -116,7 +289,7 @@ export default function MatchManage() {
                 team_id: q.data?.match.team_a_id,
                 player_id: playerId,
                 type,
-                minute: null,
+                minute: currentMinuteAbs,
               })
             }
           />
@@ -128,6 +301,7 @@ export default function MatchManage() {
             currentStarId={starPlayerId}
             isAdding={add.isPending}
             isNumbering={setNumber.isPending}
+            currentMinute={currentMinuteAbs}
             onSetNumber={(playerId, n) =>
               setNumber.mutate({ id: playerId, number: n })
             }
@@ -137,7 +311,7 @@ export default function MatchManage() {
                 team_id: q.data?.match.team_b_id,
                 player_id: playerId,
                 type,
-                minute: null,
+                minute: currentMinuteAbs,
               })
             }
           />
@@ -166,6 +340,7 @@ function TeamColumn({
   currentStarId?: number;
   isAdding: boolean;
   isNumbering: boolean;
+  currentMinute?: number;
   onSetNumber: (playerId: number, n: number | null) => void;
   onDeleteEvent: (eventId: number) => Promise<any>;
   onEvent: (playerId: number, type: MatchEvent["type"]) => void;

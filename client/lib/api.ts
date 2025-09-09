@@ -85,6 +85,12 @@ export const api = {
 
   // Matches
   listMatches: () => request<any[]>(`/api/matches`),
+  createMatch: (data: any) =>
+    request<any>(`/api/matches`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   generateMatches: (teamIds: number[]) =>
     request<{ matches: any[] }>(`/api/matches/generate`, {
       method: "POST",
@@ -92,6 +98,12 @@ export const api = {
       body: JSON.stringify({ teamIds }),
     }),
   getMatch: (id: number) => request<any>(`/api/matches/${id}`),
+  updateMatch: (id: number, data: any) =>
+    request<any>(`/api/matches/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   addEvent: (id: number, data: any) =>
     request<any>(`/api/matches/${id}/events`, {
       method: "POST",

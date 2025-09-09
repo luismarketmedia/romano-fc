@@ -90,6 +90,7 @@ function migrate(db: SqlDatabase) {
       team_b_id INTEGER NOT NULL,
       scheduled_at TEXT,
       status TEXT DEFAULT 'scheduled',
+      stage TEXT DEFAULT 'classificatoria',
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY(team_a_id) REFERENCES teams(id) ON DELETE CASCADE,
       FOREIGN KEY(team_b_id) REFERENCES teams(id) ON DELETE CASCADE
@@ -111,7 +112,7 @@ function migrate(db: SqlDatabase) {
     CREATE INDEX IF NOT EXISTS idx_events_match ON match_events(match_id);
   `);
 
-  // Schema upgrades: add new team columns if missing
+  // Schema upgrades: add new columns if missing
   const cols = db.exec("PRAGMA table_info('teams')");
   const teamColNames = new Set<string>(
     (cols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
@@ -157,6 +158,17 @@ function migrate(db: SqlDatabase) {
   );
   if (!pcolNames.has("number")) {
     db.run("ALTER TABLE players ADD COLUMN number INTEGER NULL");
+  }
+
+  // Add stage column to matches if missing
+  const mcols = db.exec("PRAGMA table_info('matches')");
+  const mcolNames = new Set<string>(
+    (mcols?.[0]?.values ?? []).map((r: any[]) => String(r[1])),
+  );
+  if (!mcolNames.has("stage")) {
+    db.run(
+      "ALTER TABLE matches ADD COLUMN stage TEXT DEFAULT 'classificatoria'",
+    );
   }
 
   // Rebuild match_events to support STAR type if old schema detected
